@@ -180,22 +180,6 @@ localparam CONF_STR = {
 	"-;",
 	"O1,Aspect ratio,4:3,16:9;",
 	"O2,TV Mode,NTSC,PAL;",
-	"O34,Noise,White,Red,Green,Blue;",
-	"-;",
-	"P1,Test Page 1;",
-	"P1-;",
-	"P1-, -= Options in page 1 =-;",
-	"P1-;",
-	"P1O5,Option 1-1,Off,On;",
-	"d0P1F1,BIN;",
-	"H0P1O6,Option 1-2,Off,On;",
-	"-;",
-	"P2,Test Page 2;",
-	"P2-;",
-	"P2-, -= Options in page 2 =-;",
-	"P2-;",
-	"P2S0,DSK;",
-	"P2O67,Option 2,1,2,3,4;",
 	"-;",
 	"-;",
 	"T0,Reset;",
@@ -229,8 +213,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 ///////////////////////   CLOCKS   ///////////////////////////////
 
 wire clk_sys;
-wire clk_143;
-wire clk_35 = clk_div[1];
+wire clk_35; // 3.5 MHz
 reg [1:0] clk_div;
 
 pll pll
@@ -238,17 +221,13 @@ pll pll
 	.refclk(CLK_50M),
 	.rst(0),
 	.outclk_0(clk_sys),
-	.outclk_1(clk_143)
+	.outclk_1(clk_35)
 );
+
 
 wire reset = RESET | status[0] | buttons[1];
 
-always @(posedge clk_143)
-	clk_div <= clk_div + 2'd1;
-
 //////////////////////////////////////////////////////////////////
-
-wire [1:0] col = status[4:3];
 
 wire hblank;
 wire vblank;
@@ -271,20 +250,15 @@ mc10 mc10
 	.green(VGA_G),
 	.blue(VGA_B),
 
-	.hsync(hsync),
-	.vsync(vsync),
+	.hsync(VGA_HS),
+	.vsync(VGA_VS),
 	.hblank(hblank),
 	.vblank(vblank)
 );
 
-always @(posedge clk_143) ce_pix = ~ce_pix;
-
-assign CLK_VIDEO = clk_sys;
 assign CE_PIXEL = ce_pix;
-
+assign CLK_VIDEO = clk_sys;
 assign VGA_DE = ~(hblank | vblank);
-assign VGA_HS = hsync;
-assign VGA_VS = vsync;
-
+always @(posedge clk_sys) ce_pix = ~ce_pix;
 
 endmodule

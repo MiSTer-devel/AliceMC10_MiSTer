@@ -2,8 +2,7 @@
 module mc10 (
   input reset,
   input clk_sys,
-  //input clk_140, // 14.31818 MHz NTSC
-  input clk_35, // 3.579545 MHz (clk_sys/4)
+  input clk_35,
   input [10:0] ps2_key,
   input [10:0] exp_in, // D7-D0, sel, reset, nmi
   output [17:0] exp_out, // R/W, A15-A0, E
@@ -56,15 +55,6 @@ MC6803_gen2 U1(
   .rw(cpu_rw)
 );
 
-x74155 U4(
-  .C({ ~E_CLK, E_CLK }),
-  .G({ exp_in[0] | cpu_addr[12], exp_in[0] }),
-  .A(cpu_addr[14]),
-  .B(cpu_addr[15]),
-  .Y1(U4_Y1),
-  .Y2(U4_Y2)
-);
-
 rom_mc10 U3(
   .clk(clk_sys),
   .addr(cpu_addr),
@@ -72,22 +62,13 @@ rom_mc10 U3(
   .cs(U4_Y1[3])
 );
 
-ram u9(
-  .clk(clk_sys),
-  .addr(addr_bus[10:0]),
-  .din(ram_din),
-  .dout(ram1_dout),
-  .we(U4_Y2[1] | cpu_rw), // U4 2Y1|RW
-  .cs(addr_bus[11])
-);
-
-ram u10(
-  .clk(clk_sys),
-  .addr(addr_bus[10:0]),
-  .din(ram_din),
-  .dout(ram2_dout),
-  .we(U4_Y2[1] | cpu_rw), // U4 2Y1|RW
-  .cs(~addr_bus[11])
+x74155 U4(
+  .C({ ~E_CLK, E_CLK }),
+  .G({ exp_in[0] | cpu_addr[12], exp_in[0] }),
+  .A(cpu_addr[14]),
+  .B(cpu_addr[15]),
+  .Y1(U4_Y1),
+  .Y2(U4_Y2)
 );
 
 x74367A U5(
@@ -116,8 +97,26 @@ always @(posedge U8_clock or posedge RESET)
   if (RESET) U8 <= 6'd0;
   else U8 <= cpu_dout[7:2];
 
+ram u9(
+  .clk(clk_sys),
+  .addr(addr_bus[10:0]),
+  .din(ram_din),
+  .dout(ram1_dout),
+  .we(U4_Y2[1] | cpu_rw), // U4 2Y1|RW
+  .cs(addr_bus[11])
+);
+
+ram u10(
+  .clk(clk_sys),
+  .addr(addr_bus[10:0]),
+  .din(ram_din),
+  .dout(ram2_dout),
+  .we(U4_Y2[1] | cpu_rw), // U4 2Y1|RW
+  .cs(~addr_bus[11])
+);
+
 mc6847_mc10 U11(
-  .clk(~clk_35),
+  .clk(clk_sys),
   .clk_ena(1'b1),
   .reset(RESET),
   .addr(vdg_addr),
@@ -152,6 +151,5 @@ keyboard keyboard(
   .shift(shift),
   .rows(kb_rows)
 );
-
 
 endmodule
