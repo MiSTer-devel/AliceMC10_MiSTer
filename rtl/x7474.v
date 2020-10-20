@@ -38,7 +38,7 @@ always @*
     2'b00: { q2, qn2 } = 2'b11;
     2'b01: { q2, qn2 } = 2'b10;
     2'b10: { q2, qn2 } = 2'b01;
-    2'b11: { q2, qn2 } = { qt2, ~qnt2 };
+    2'b11: { q2, qn2 } = { qt2, qnt2 };
   endcase
 
 
