@@ -63,7 +63,7 @@ rom_mc10 U3(
 );
 
 x74155 U4(
-  .C({ ~E_CLK, E_CLK }),
+  .C({ U18_qn1, E_CLK }),
   .G({ exp_in[0] | cpu_addr[12], exp_in[0] }),
   .A(cpu_addr[14]),
   .B(cpu_addr[15]),
@@ -92,31 +92,31 @@ x74245 U7(
   .G(U4_Y1[1])
 );
 
-wire U8_clock = ~(cpu_rw | U4_Y1[2]);
+wire U8_clock = cpu_rw | U4_Y1[2];
 always @(posedge U8_clock or posedge RESET)
   if (RESET) U8 <= 6'd0;
   else U8 <= cpu_dout[7:2];
 
-ram u9(
-  .clk(clk_sys),
-  .addr(addr_bus[10:0]),
-  .din(ram_din),
-  .dout(ram1_dout),
-  .we(U4_Y2[1] | cpu_rw), // U4 2Y1|RW
-  .cs(addr_bus[11])
+bram u9(
+  .address(addr_bus[10:0]),
+  .clock(clk_sys),
+  .data(ram_din),
+  .q(ram1_dout),
+  .wren(~(U4_Y2[1] | cpu_rw)),
+  .rden(~addr_bus[11])
 );
 
-ram u10(
-  .clk(clk_sys),
-  .addr(addr_bus[10:0]),
-  .din(ram_din),
-  .dout(ram2_dout),
-  .we(U4_Y2[1] | cpu_rw), // U4 2Y1|RW
-  .cs(~addr_bus[11])
+bram u10(
+  .address(addr_bus[10:0]),
+  .clock(clk_sys),
+  .data(ram_din),
+  .q(ram2_dout),
+  .wren(~(U4_Y2[1] | cpu_rw)),
+  .rden(addr_bus[11])
 );
 
 mc6847_mc10 U11(
-  .clk(clk_sys),
+  .clk(clk_35),
   .clk_ena(1'b1),
   .reset(RESET),
   .addr(vdg_addr),
@@ -145,11 +145,24 @@ x14503B U14(
 );
 
 keyboard keyboard(
-  .clk(clk_sys),
+  .clk_sys(clk_sys),
+  .reset(RESET),
   .ps2_key(ps2_key),
-  .KR(KR),
-  .shift(shift),
-  .rows(kb_rows)
+  .addr(KR),
+  .kb_rows(kb_rows),
+  .kblayout(1'b1),
+  .Fn(),
+  .modif(shift)
+);
+
+wire U18_qn1;
+x7474 U18(
+  .clk1(clk_35),
+  .p1(1'b0),
+  .c1(E_CLK),
+  .d1(U18_qn1),
+  .q1(),
+  .qn1(U18_qn1)
 );
 
 endmodule

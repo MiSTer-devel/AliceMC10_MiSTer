@@ -4,12 +4,12 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/6803/MC6803_gen2.sv
 set_global_assignment -name VERILOG_FILE rtl/6847/mc6847.v
 set_global_assignment -name VERILOG_FILE rtl/6847/mc6847_mc10.v
 set_global_assignment -name VERILOG_FILE rtl/6847/rom_char.v
-set_global_assignment -name VERILOG_FILE rtl/keyboard.v
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/keyboard.sv
 set_global_assignment -name VERILOG_FILE rtl/ram.v
 set_global_assignment -name VERILOG_FILE rtl/rom_mc10.v
 set_global_assignment -name VERILOG_FILE rtl/x14503B.v
 set_global_assignment -name VERILOG_FILE rtl/x74155.v
 set_global_assignment -name VERILOG_FILE rtl/x74245.v
 set_global_assignment -name VERILOG_FILE rtl/x74367A.v
-set_global_assignment -name SDC_FILE Alice.sdc
+set_global_assignment -name VERILOG_FILE rtl/x7474.v
 set_global_assignment -name SYSTEMVERILOG_FILE Alice.sv

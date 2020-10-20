@@ -214,7 +214,6 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 wire clk_sys;
 wire clk_35; // 3.5 MHz
-reg [1:0] clk_div;
 
 pll pll
 (
