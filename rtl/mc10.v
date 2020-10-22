@@ -12,19 +12,16 @@ module mc10 (
   output hsync,
   output vsync,
   output hblank,
-  output vblank
+  output vblank,
+  input cin
 );
 
 wire [15:0] cpu_addr;
 wire E_CLK;
 wire cpu_rw;
 wire [3:0] U4_Y1, U4_Y2;
-wire [7:0] rom_dout;
-wire [5:0] U5_Y, U6_Y;
 wire [12:0] vdg_addr;
-wire [11:0] addr_bus = { U5_Y, U6_Y } | vdg_addr[11:0];
-wire [7:0] cpu_dout, ram1_dout, ram2_dout, U7_dout, ram_din;
-wire [7:0] ram_data_bus = ram1_dout | ram2_dout;
+wire [7:0] cpu_dout, rom_dout, ram_dout, ram_dout_b;
 wire [3:0] r4, g4, b4;
 wire [7:0] KR, kb_rows;
 wire [5:0] U14_out;
@@ -45,8 +42,8 @@ MC6803_gen2 U1(
   .irq(0),
   .nmi(exp_in[2]),
   .PORT_A_IN(),
-  .PORT_B_IN({ 2'b0, shift, 1'b0 }),
-  .DATA_IN(rom_dout | U7_dout | U14_out),
+  .PORT_B_IN({ cin, 1'b0, shift, 1'b0 }),
+  .DATA_IN(rom_dout | (U4_Y1[1] ? 8'd0 : ram_dout) | U14_out),
   .PORT_A_OUT(KR),
   .PORT_B_OUT(),
   .ADDRESS(cpu_addr),
@@ -71,48 +68,21 @@ x74155 U4(
   .Y2(U4_Y2)
 );
 
-x74367A U5(
-  .A(cpu_addr[11:6]),
-  .Y(U5_Y),
-  .G(U4_Y1[1])
-);
-
-x74367A U6(
-  .A(cpu_addr[5:0]),
-  .Y(U6_Y),
-  .G(U4_Y1[1])
-);
-
-x74245 U7(
-  .Ai(cpu_dout),
-  .Bi(ram_data_bus),
-  .Ao(U7_dout),
-  .Bo(ram_din),
-  .dir(~cpu_rw),
-  .G(U4_Y1[1])
-);
-
 wire U8_clock = cpu_rw | U4_Y1[2];
 always @(posedge U8_clock or posedge RESET)
   if (RESET) U8 <= 6'd0;
   else U8 <= cpu_dout[7:2];
 
-bram u9(
-  .address(addr_bus[10:0]),
+dpram u9_u10(
   .clock(clk_sys),
-  .data(ram_din),
-  .q(ram1_dout),
-  .wren(~(U4_Y2[1] | cpu_rw)),
-  .rden(~addr_bus[11])
-);
 
-bram u10(
-  .address(addr_bus[10:0]),
-  .clock(clk_sys),
-  .data(ram_din),
-  .q(ram2_dout),
-  .wren(~(U4_Y2[1] | cpu_rw)),
-  .rden(addr_bus[11])
+  .address_a(cpu_addr[11:0]),
+  .data_a(cpu_dout),
+  .wren_a(~(cpu_rw|U4_Y2[1])),
+  .q_a(ram_dout),
+
+  .address_b(vdg_addr[11:0]),
+  .q_b(ram_dout_b)
 );
 
 mc6847_mc10 U11(
@@ -120,21 +90,20 @@ mc6847_mc10 U11(
   .clk_ena(1'b1),
   .reset(RESET),
   .addr(vdg_addr),
-  .dd(ram_data_bus),
+  .dd(ram_dout_b),
   .an_g(U8[3]),
-  .an_s(ram_data_bus[7]),
+  .an_s(ram_dout_b[7]),
   .intn_ext(U8[0]),
   .gm({ U8[0], U8[1], U8[2] }),
   .css(U8[4]),
-  .inv(ram_data_bus[6]),
+  .inv(ram_dout_b[6]),
   .red(r4),
   .green(g4),
   .blue(b4),
   .hsync(hsync),
   .vsync(vsync),
   .hblank(hblank),
-  .vblank(vblank),
-  .ms(U4_Y1[1])
+  .vblank(vblank)
 );
 
 x14503B U14(
@@ -150,9 +119,7 @@ keyboard keyboard(
   .ps2_key(ps2_key),
   .addr(KR),
   .kb_rows(kb_rows),
-  .kblayout(1'b0),
-  .Fn(),
-  .modif()
+  .kblayout(1'b0)
 );
 
 endmodule

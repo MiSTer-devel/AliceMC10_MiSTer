@@ -181,6 +181,9 @@ localparam CONF_STR = {
 	"O1,Aspect ratio,4:3,16:9;",
 	"O2,TV Mode,NTSC,PAL;",
 	"-;",
+	"F,k7,Tape Load;",
+	"RA,Tape Play/Pause;",
+	"RB,Tape Rewind;",
 	"-;",
 	"T0,Reset;",
 	"R0,Reset and close OSD;",
@@ -191,6 +194,13 @@ wire forced_scandoubler;
 wire  [1:0] buttons;
 wire [31:0] status;
 wire [10:0] ps2_key;
+
+wire        ioctl_wr;
+wire [24:0] ioctl_addr;
+wire  [7:0] ioctl_dout;
+wire        ioctl_download;
+wire  [7:0] ioctl_index;
+wire		ioctl_wait;
 
 hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
@@ -206,12 +216,20 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.status(status),
 	.status_menumask({status[5]}),
 
-	.ps2_key(ps2_key)
+	.ps2_key(ps2_key),
+
+	.ioctl_download(ioctl_download),
+	.ioctl_wr(ioctl_wr),
+	.ioctl_addr(ioctl_addr),
+	.ioctl_dout(ioctl_dout),
+	.ioctl_wait(ioctl_wait),
+	.ioctl_index(ioctl_index)
 );
 
 
 ///////////////////////   CLOCKS   ///////////////////////////////
 
+wire locked;
 wire clk_sys;
 wire clk_35; // 3.5 MHz
 
@@ -220,7 +238,8 @@ pll pll
 	.refclk(CLK_50M),
 	.rst(0),
 	.outclk_0(clk_sys),
-	.outclk_1(clk_35)
+	.outclk_1(clk_35),
+	.locked(locked)
 );
 
 
@@ -252,12 +271,47 @@ mc10 mc10
 	.hsync(VGA_HS),
 	.vsync(VGA_VS),
 	.hblank(hblank),
-	.vblank(vblank)
+	.vblank(vblank),
+
+	.cin(cdata)
 );
 
 assign CE_PIXEL = ce_pix;
 assign CLK_VIDEO = clk_sys;
 assign VGA_DE = ~(hblank | vblank);
 always @(posedge clk_sys) ce_pix = ~ce_pix;
+
+
+wire [24:0] sdram_addr;
+wire [7:0] sdram_data;
+wire sdram_rd;
+
+sdram sdram
+(
+	.*,
+	.init(~locked),
+	.clk(clk_sys),
+	.addr(ioctl_download ? ioctl_addr : sdram_addr),
+	.wtbt(0),
+	.dout(sdram_data),
+	.din(ioctl_dout),
+	.rd(sdram_rd),
+	.we(ioctl_wr),
+	.ready()
+);
+
+wire cdata;
+/*
+cassette cassette(
+  .clk_sys(clk_sys),
+  .play({status[10]}),
+
+  .sdram_addr(sdram_addr),
+  .sdram_data(sdram_data),
+  .sdram_rd(sdram_rd),
+
+  .data(cdata)
+);
+*/
 
 endmodule
