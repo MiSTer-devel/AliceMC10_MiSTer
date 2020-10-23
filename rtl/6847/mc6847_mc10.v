@@ -2,8 +2,9 @@
 module mc6847_mc10(
   input             clk,
   input             clk_ena,
+  input             clk_sys,
   input             reset,
-  output [12:0]     addr,
+  output [12:0]     videoaddr,
   input  [7:0]      dd,
   input             an_g,
   input             an_s,
@@ -17,21 +18,21 @@ module mc6847_mc10(
   output            hsync,
   output            vsync,
   output            hblank,
-  output            vblank,
-  input ms
+  output            vblank
+  // input ms
 );
 
-wire [12:0] videoaddr;
-assign addr = ms ? videoaddr : 13'd0;
+// wire [12:0] videoaddr;
+// assign addr = ms ? videoaddr : 13'd0;
 
-reg [7:0] data_latch;
-reg an_s_latch, inv_latch;
-always @(posedge clk)
-  if (ms) begin
-    data_latch <= dd;
-    an_s_latch <= an_s;
-    inv_latch <= inv;
-  end
+// reg [7:0] data_latch;
+// reg an_s_latch, inv_latch;
+// always @(posedge clk)
+//   if (ms) begin
+//     data_latch <= dd;
+//     an_s_latch <= an_s;
+//     inv_latch <= inv;
+//   end
 
 mc6847 vdg(
   .clk(clk),
@@ -39,15 +40,15 @@ mc6847 vdg(
   .reset(reset),
   .da0(),
   .videoaddr(videoaddr),
-  .dd(data_latch),
+  .dd(dd),
   .hs_n(),
   .fs_n(),
   .an_g(an_g),
-  .an_s(an_s_latch),
+  .an_s(an_s),
   .intn_ext(intn_ext),
   .gm(gm),
   .css(css),
-  .inv(inv_latch),
+  .inv(inv),
   .red(red),
   .green(green),
   .blue(blue),
@@ -73,7 +74,7 @@ wire [3:0] temp_vdg_char_addr = vdg_char_addr[3:0] - 2'b11;
 wire [7:0] char_data = (vdg_char_addr[3:0] < 3 || vdg_char_addr[3:0] > 10) ? 8'h00 : chr_dout;
 
 rom_char rom_char(
-  .clk(clk),
+  .clk(clk_sys),
   .addr(char_rom_addr),
   .dout(chr_dout)
 );

@@ -34,8 +34,14 @@ assign blue[7:4] = b4;
 
 wire RESET = reset | exp_in[1];
 
+reg [1:0] clk_div;
+always @(posedge clk_35)
+  clk_div <= clk_div + 2'd1;
+
+wire clk_cpu = clk_div[1];
+
 MC6803_gen2 U1(
-  .clk(clk_35),
+  .clk(clk_cpu),
   .RST(RESET),
   .hold(0),
   .halt(0),
@@ -60,7 +66,7 @@ rom_mc10 U3(
 );
 
 x74155 U4(
-  .C({ ~E_CLK, E_CLK }),
+  .C(2'b01),
   .G({ exp_in[0] | cpu_addr[12], exp_in[0] }),
   .A(cpu_addr[14]),
   .B(cpu_addr[15]),
@@ -68,17 +74,17 @@ x74155 U4(
   .Y2(U4_Y2)
 );
 
-wire U8_clock = cpu_rw | U4_Y1[2];
-always @(posedge U8_clock or posedge RESET)
-  if (RESET) U8 <= 6'd0;
-  else U8 <= cpu_dout[7:2];
+// wire U8_clock = cpu_rw | U4_Y1[2];
+// always @(negedge U8_clock or posedge RESET)
+//   if (RESET) U8 <= 6'd0;
+//   else U8 <= cpu_dout[7:2];
 
 dpram u9_u10(
   .clock(clk_sys),
 
   .address_a(cpu_addr[11:0]),
   .data_a(cpu_dout),
-  .wren_a(~(cpu_rw|U4_Y2[1])),
+  .wren_a(~(cpu_rw|U4_Y1[1])),
   .q_a(ram_dout),
 
   .address_b(vdg_addr[11:0]),
@@ -87,9 +93,10 @@ dpram u9_u10(
 
 mc6847_mc10 U11(
   .clk(clk_35),
+  .clk_sys(clk_sys),
   .clk_ena(1'b1),
   .reset(RESET),
-  .addr(vdg_addr),
+  .videoaddr(vdg_addr),
   .dd(ram_dout_b),
   .an_g(U8[3]),
   .an_s(ram_dout_b[7]),
