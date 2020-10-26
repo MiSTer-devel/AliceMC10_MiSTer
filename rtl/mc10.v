@@ -40,6 +40,10 @@ always @(posedge clk_35)
 
 wire clk_cpu = clk_div[1];
 
+reg [7:0] data_bus;
+always @(posedge clk_sys)
+  data_bus <= rom_dout | (U4_Y1[1] ? 8'd0 : ram_dout) | U14_out;
+
 MC6803_gen2 U1(
   .clk(clk_cpu),
   .RST(RESET),
@@ -49,7 +53,7 @@ MC6803_gen2 U1(
   .nmi(exp_in[2]),
   .PORT_A_IN(),
   .PORT_B_IN({ cin, 1'b0, shift, 1'b0 }),
-  .DATA_IN(rom_dout | (U4_Y1[1] ? 8'd0 : ram_dout) | U14_out),
+  .DATA_IN(data_bus),
   .PORT_A_OUT(KR),
   .PORT_B_OUT(),
   .ADDRESS(cpu_addr),
@@ -74,6 +78,7 @@ x74155 U4(
   .Y2(U4_Y2)
 );
 
+// TODO:
 // wire U8_clock = cpu_rw | U4_Y1[2];
 // always @(negedge U8_clock or posedge RESET)
 //   if (RESET) U8 <= 6'd0;

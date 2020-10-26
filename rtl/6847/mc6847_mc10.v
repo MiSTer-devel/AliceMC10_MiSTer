@@ -25,14 +25,13 @@ module mc6847_mc10(
 // wire [12:0] videoaddr;
 // assign addr = ms ? videoaddr : 13'd0;
 
-// reg [7:0] data_latch;
-// reg an_s_latch, inv_latch;
-// always @(posedge clk)
-//   if (ms) begin
-//     data_latch <= dd;
-//     an_s_latch <= an_s;
-//     inv_latch <= inv;
-//   end
+reg [7:0] data_latch;
+reg an_s_latch, inv_latch;
+always @(posedge clk) begin
+  data_latch <= dd;
+  an_s_latch <= an_s;
+  inv_latch <= inv;
+end
 
 mc6847 vdg(
   .clk(clk),
@@ -40,15 +39,15 @@ mc6847 vdg(
   .reset(reset),
   .da0(),
   .videoaddr(videoaddr),
-  .dd(dd),
+  .dd(data_latch),
   .hs_n(),
   .fs_n(),
   .an_g(an_g),
-  .an_s(an_s),
+  .an_s(an_s_latch),
   .intn_ext(intn_ext),
   .gm(gm),
   .css(css),
-  .inv(inv),
+  .inv(inv_latch),
   .red(red),
   .green(green),
   .blue(blue),

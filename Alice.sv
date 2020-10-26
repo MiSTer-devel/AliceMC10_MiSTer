@@ -273,7 +273,7 @@ mc10 mc10
 	.hblank(hblank),
 	.vblank(vblank),
 
-	.cin(cdata)
+	.cin(k7_dout)
 );
 
 assign CE_PIXEL = ce_pix;
@@ -300,18 +300,19 @@ sdram sdram
 	.ready()
 );
 
-wire cdata;
-/*
+wire k7_dout;
+
 cassette cassette(
-  .clk_sys(clk_sys),
+  .clk(clk_sys),
   .play({status[10]}),
+  .rewind({status[11]}),
 
   .sdram_addr(sdram_addr),
   .sdram_data(sdram_data),
   .sdram_rd(sdram_rd),
 
-  .data(cdata)
+  .data(k7_dout)
 );
-*/
+
 
 endmodule

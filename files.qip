@@ -11,4 +11,5 @@ set_global_assignment -name VERILOG_FILE rtl/rom_mc10.v
 set_global_assignment -name VERILOG_FILE rtl/cassette.v
 set_global_assignment -name VERILOG_FILE rtl/x14503B.v
 set_global_assignment -name VERILOG_FILE rtl/x74155.v
+set_global_assignment -name VERILOG_FILE rtl/square_gen.v
 set_global_assignment -name SYSTEMVERILOG_FILE Alice.sv
