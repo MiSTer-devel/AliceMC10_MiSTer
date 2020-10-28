@@ -8,9 +8,19 @@ module square_gen(
 
 assign s = square;
 
+// 50Mhz to 2400Hz
+// 50/0.0048=10416, (2^24)/10416=1610
+// 50/0.0024=20833, (2^24)/20833=805
+
 parameter
-  SLOW = 24'd402,
+  SLOW = 24'd805,
   FAST = 24'd1610;
+
+/*
+parameter
+  SLOW = 24'd40200,
+  FAST = 24'd161000;
+*/
 
 reg [23:0] div;
 wire [23:0] stp = freq ? FAST : SLOW;

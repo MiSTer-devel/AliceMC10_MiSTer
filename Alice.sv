@@ -232,6 +232,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 wire locked;
 wire clk_sys;
 wire clk_35; // 3.5 MHz
+wire clk_vid;
 
 pll pll
 (
@@ -280,7 +281,6 @@ assign CE_PIXEL = ce_pix;
 assign CLK_VIDEO = clk_sys;
 assign VGA_DE = ~(hblank | vblank);
 always @(posedge clk_sys) ce_pix = ~ce_pix;
-
 
 wire [24:0] sdram_addr;
 wire [7:0] sdram_data;
