@@ -33,7 +33,7 @@ assign red[7:4] = r4;
 assign green[7:4] = g4;
 assign blue[7:4] = b4;
 
-assign audio = U8[0];
+assign audio = U8[5];
 
 wire RESET = reset | exp_in[1];
 
@@ -105,11 +105,11 @@ mc6847_mc10 U11(
   .reset(RESET),
   .videoaddr(vdg_addr),
   .dd(ram_dout_b),
-  .an_g(U8[2]),
+  .an_g(U8[3]),
   .an_s(ram_dout_b[7]),
-  .intn_ext(U8[5]),
-  .gm({ U8[5], U8[4], U8[3] }),
-  .css(U8[1]),
+  .intn_ext(U8[0]),
+  .gm({ U8[0], U8[1], U8[2] }), // 5 4 3
+  .css(U8[4]),
   .inv(ram_dout_b[6]),
   .red(r4),
   .green(g4),
