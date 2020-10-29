@@ -1,39 +1,51 @@
 
 module square_gen(
-  input reset,
   input clk,
-  input freq,
-  output s
+  input start,
+  input [7:0] din,
+  output reg done,
+  output dout
 );
 
-assign s = square;
-
-// 50Mhz to 2400Hz
-// 50/0.0048=10416, (2^24)/10416=1610
-// 50/0.0024=20833, (2^24)/20833=805
-
-parameter
-  SLOW = 24'd805,
-  FAST = 24'd1610;
-
-/*
-parameter
-  SLOW = 24'd40200,
-  FAST = 24'd161000;
-*/
+parameter STP = 24'd1610;
 
 reg [23:0] div;
-wire [23:0] stp = freq ? FAST : SLOW;
+reg [2:0] nbit;
+reg [7:0] data;
+reg [1:0] cnt;
+reg en, pulse;
 
-reg pulse;
-reg square;
+initial begin
+  en = 0;
+  nbit = 0;
+  cnt = 0;
+  div = 0;
+end
 
-always @(posedge clk or posedge reset)
-  if (reset) div <= 24'd0;
-  else { pulse, div } <= div + stp;
+assign dout = data[0] ? ~cnt[0] : ~cnt[1];
 
-always @(posedge pulse or posedge reset)
-  if (reset) square <= 1'b1;
-  else square <= ~square;
+always @(posedge clk or posedge start)
+  if (start) div <= 24'd0;
+  else if (en) { pulse, div } <= div + STP;
+
+always @(posedge pulse or posedge start) begin
+  if (start) begin
+    en <= 1'b1;
+    done <= 1'b0;
+    data <= din;
+  end
+  else if (en) begin
+    cnt <= cnt + 2'd1;
+    if ({ ~data[0], 1'b1 } == cnt)  begin
+      cnt <= 2'd0;
+      nbit <= nbit + 3'd1;
+      data <= { 1'b0, data[7:1] };
+      if (nbit == 3'd7) begin
+        en <= 1'b0;
+        done <= 1'b1;
+      end
+    end
+  end
+end
 
 endmodule

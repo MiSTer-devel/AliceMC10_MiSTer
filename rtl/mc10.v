@@ -2,7 +2,7 @@
 module mc10 (
   input reset,
   input clk_sys,
-  input clk_35,
+  input clk_4,
   input [10:0] ps2_key,
   input [10:0] exp_in, // D7-D0, sel, reset, nmi
   output [17:0] exp_out, // R/W, A15-A0, E
@@ -35,7 +35,7 @@ assign blue[7:4] = b4;
 wire RESET = reset | exp_in[1];
 
 reg [1:0] clk_div;
-always @(posedge clk_35)
+always @(posedge clk_4)
   clk_div <= clk_div + 2'd1;
 
 wire clk_cpu = clk_div[1];
@@ -78,11 +78,10 @@ x74155 U4(
   .Y2(U4_Y2)
 );
 
-// TODO:
-// wire U8_clock = cpu_rw | U4_Y1[2];
-// always @(negedge U8_clock or posedge RESET)
-//   if (RESET) U8 <= 6'd0;
-//   else U8 <= cpu_dout[7:2];
+wire U8_clock = ~(cpu_rw | U4_Y1[2]);
+always @(posedge U8_clock or posedge RESET)
+  if (RESET) U8 <= 6'd0;
+  else U8 <= cpu_dout[7:2];
 
 dpram u9_u10(
   .clock(clk_sys),
@@ -97,7 +96,7 @@ dpram u9_u10(
 );
 
 mc6847_mc10 U11(
-  .clk(clk_35),
+  .clk(clk_4),
   .clk_sys(clk_sys),
   .clk_ena(1'b1),
   .reset(RESET),

@@ -182,8 +182,8 @@ localparam CONF_STR = {
 	"O2,TV Mode,NTSC,PAL;",
 	"-;",
 	"F,k7,Tape Load;",
-	"RA,Tape Play/Pause;",
-	"RB,Tape Rewind;",
+	"TA,Tape Play/Pause;",
+	"TB,Tape Rewind;",
 	"-;",
 	"T0,Reset;",
 	"R0,Reset and close OSD;",
@@ -231,15 +231,14 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 wire locked;
 wire clk_sys;
-wire clk_35; // 3.5 MHz
-wire clk_vid;
+wire clk_4; // 4MHz
 
 pll pll
 (
 	.refclk(CLK_50M),
 	.rst(0),
 	.outclk_0(clk_sys),
-	.outclk_1(clk_35),
+	.outclk_1(clk_4),
 	.locked(locked)
 );
 
@@ -258,7 +257,7 @@ mc10 mc10
 (
 	.reset(reset),
 	.clk_sys(clk_sys),
-	.clk_35(clk_35),
+	.clk_4(clk_4),
 
 	.ps2_key(ps2_key),
 
@@ -304,8 +303,8 @@ wire k7_dout;
 
 cassette cassette(
   .clk(clk_sys),
-  .play({status[10]}),
-  .rewind({status[11]}),
+  .play(status[10]),
+  .rewind(status[11]),
 
   .sdram_addr(sdram_addr),
   .sdram_data(sdram_data),
