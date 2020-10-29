@@ -277,8 +277,8 @@ mc10 mc10
 	.cin(k7_dout)
 );
 
-assign AUDIO_L = { audio, 14'd0 };
-assign AUDIO_R = { audio, 14'd0 };
+assign AUDIO_L = { audio, audio, 13'd0 };
+assign AUDIO_R = { audio, audio, 13'd0 };
 assign CE_PIXEL = ce_pix;
 assign CLK_VIDEO = clk_sys;
 assign VGA_DE = ~(hblank | vblank);
