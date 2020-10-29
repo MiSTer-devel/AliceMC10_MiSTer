@@ -161,8 +161,6 @@ assign VGA_SL = 0;
 assign VGA_F1 = 0;
 
 assign AUDIO_S = 0;
-assign AUDIO_L = 0;
-assign AUDIO_R = 0;
 assign AUDIO_MIX = 0;
 
 assign LED_DISK = 0;
@@ -251,6 +249,7 @@ wire hblank;
 wire vblank;
 wire hsync;
 wire vsync;
+wire audio;
 reg ce_pix;
 
 mc10 mc10
@@ -273,9 +272,13 @@ mc10 mc10
 	.hblank(hblank),
 	.vblank(vblank),
 
+	.audio(audio),
+
 	.cin(k7_dout)
 );
 
+assign AUDIO_L = { audio, 14'd0 };
+assign AUDIO_R = { audio, 14'd0 };
 assign CE_PIXEL = ce_pix;
 assign CLK_VIDEO = clk_sys;
 assign VGA_DE = ~(hblank | vblank);

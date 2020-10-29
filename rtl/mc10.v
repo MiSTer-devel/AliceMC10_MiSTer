@@ -13,6 +13,7 @@ module mc10 (
   output vsync,
   output hblank,
   output vblank,
+  output audio,
   input cin
 );
 
@@ -31,6 +32,8 @@ reg [5:0] U8;
 assign red[7:4] = r4;
 assign green[7:4] = g4;
 assign blue[7:4] = b4;
+
+assign audio = U8[0];
 
 wire RESET = reset | exp_in[1];
 
@@ -95,6 +98,12 @@ dpram u9_u10(
   .q_b(ram_dout_b)
 );
 
+// 0 = 5
+// 1 = 4
+// 2 = 3
+// 3 = 2
+// 4 = 1
+// 5 = 0
 mc6847_mc10 U11(
   .clk(clk_4),
   .clk_sys(clk_sys),
@@ -102,11 +111,11 @@ mc6847_mc10 U11(
   .reset(RESET),
   .videoaddr(vdg_addr),
   .dd(ram_dout_b),
-  .an_g(U8[3]),
+  .an_g(U8[2]), // 3
   .an_s(ram_dout_b[7]),
-  .intn_ext(U8[0]),
-  .gm({ U8[0], U8[1], U8[2] }),
-  .css(U8[4]),
+  .intn_ext(U8[5]), // 0
+  .gm({ U8[5], U8[4], U8[3] }), // 0, 1, 2
+  .css(U8[1]), // 4
   .inv(ram_dout_b[6]),
   .red(r4),
   .green(g4),
