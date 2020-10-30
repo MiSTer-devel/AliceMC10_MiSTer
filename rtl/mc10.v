@@ -82,9 +82,9 @@ x74155 U4(
 );
 
 wire U8_clock = ~(cpu_rw | U4_Y1[2]);
-always @(posedge U8_clock or posedge RESET)
+always @(posedge clk_sys)
   if (RESET) U8 <= 6'd0;
-  else U8 <= cpu_dout[7:2];
+  else if (U8_clock) U8 <= cpu_dout[7:2];
 
 dpram u9_u10(
   .clock(clk_sys),
@@ -108,7 +108,7 @@ mc6847_mc10 U11(
   .an_g(U8[3]),
   .an_s(ram_dout_b[7]),
   .intn_ext(U8[0]),
-  .gm({ U8[0], U8[1], U8[2] }), // 5 4 3
+  .gm({ U8[0], U8[1], U8[2] }),
   .css(U8[4]),
   .inv(ram_dout_b[6]),
   .red(r4),

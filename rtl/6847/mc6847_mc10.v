@@ -22,13 +22,11 @@ module mc6847_mc10(
 );
 
 reg [7:0] data;
-reg ans, ang, intn, inverted;
+reg ans, inverted;
 always @(posedge clk) begin
   data <= dd;
   ans <= an_s;
-  ang <= an_g;
   inverted <= inv;
-  intn <= intn_ext;
 end
 
 mc6847 vdg(
@@ -40,9 +38,9 @@ mc6847 vdg(
   .dd(data),
   .hs_n(),
   .fs_n(),
-  .an_g(ang),
+  .an_g(an_g),
   .an_s(ans),
-  .intn_ext(intn),
+  .intn_ext(intn_ext),
   .gm(gm),
   .css(css),
   .inv(inverted),

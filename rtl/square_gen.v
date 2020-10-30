@@ -25,7 +25,7 @@ end
 assign dout = data[0] ? ~cnt[0] : ~cnt[1];
 
 always @(posedge clk or posedge start)
-  if (start) div <= 24'd0;
+  if (start | ~en) div <= 24'd0;
   else if (en) { pulse, div } <= div + STP;
 
 always @(posedge pulse or posedge start) begin
