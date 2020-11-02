@@ -4,8 +4,8 @@ module mc10 (
   input clk_sys,
   input clk_4,
   input [10:0] ps2_key,
-  input [10:0] exp_in, // D7-D0, sel, reset, nmi
-  output [17:0] exp_out, // R/W, A15-A0, E
+  input [9:0] exp_in, // D7-D0, sel, nmi
+  output [25:0] exp_out, // D7-D0, R/W, A15-A0, reset, E
   output [7:0] red,
   output [7:0] green,
   output [7:0] blue,
@@ -35,7 +35,13 @@ assign blue[7:4] = b4;
 
 assign audio = U8[5];
 
-wire RESET = reset | exp_in[1];
+assign exp_out = {
+  cpu_dout,
+  cpu_rw,
+  cpu_addr,
+  reset,
+  E_CLK
+};
 
 reg [1:0] clk_div;
 always @(posedge clk_4)
@@ -45,17 +51,17 @@ wire clk_cpu = clk_div[1];
 
 reg [7:0] data_bus;
 always @(posedge clk_sys)
-  data_bus <= rom_dout | (U4_Y1[1] ? 8'd0 : ram_dout) | U14_out;
+  data_bus <= rom_dout | (U4_Y1[1] ? 8'd0 : ram_dout) | U14_out | exp_in[9:2];
 
 MC6803_gen2 U1(
   .clk(clk_cpu),
-  .RST(RESET),
+  .RST(reset),
   .hold(0),
   .halt(0),
   .irq(0),
-  .nmi(exp_in[2]),
+  .nmi(exp_in[0]),
   .PORT_A_IN(),
-  .PORT_B_IN({ cin, 1'b0, shift, 1'b0 }),
+  .PORT_B_IN({ cin, 2'b0, shift, 1'b0 }),
   .DATA_IN(data_bus),
   .PORT_A_OUT(KR),
   .PORT_B_OUT(),
@@ -74,7 +80,7 @@ rom_mc10 U3(
 
 x74155 U4(
   .C(2'b01),
-  .G({ exp_in[0] | cpu_addr[12], exp_in[0] }),
+  .G({ exp_in[1] | cpu_addr[12], exp_in[1] }),
   .A(cpu_addr[14]),
   .B(cpu_addr[15]),
   .Y1(U4_Y1),
@@ -82,8 +88,9 @@ x74155 U4(
 );
 
 wire U8_clock = ~(cpu_rw | U4_Y1[2]);
+
 always @(posedge clk_sys)
-  if (RESET) U8 <= 6'd0;
+  if (reset) U8 <= 6'd0;
   else if (U8_clock) U8 <= cpu_dout[7:2];
 
 dpram u9_u10(
@@ -91,7 +98,7 @@ dpram u9_u10(
 
   .address_a(cpu_addr[11:0]),
   .data_a(cpu_dout),
-  .wren_a(~(cpu_rw|U4_Y1[1])),
+  .wren_a(~(cpu_rw|U4_Y1[1]|U4_Y2[1])),
   .q_a(ram_dout),
 
   .address_b(vdg_addr[11:0]),
@@ -102,7 +109,7 @@ mc6847_mc10 U11(
   .clk(clk_4),
   .clk_sys(clk_sys),
   .clk_ena(1'b1),
-  .reset(RESET),
+  .reset(reset),
   .videoaddr(vdg_addr),
   .dd(ram_dout_b),
   .an_g(U8[3]),
@@ -129,7 +136,7 @@ x14503B U14(
 
 keyboard keyboard(
   .clk_sys(clk_sys),
-  .reset(RESET),
+  .reset(reset),
   .ps2_key(ps2_key),
   .addr(KR),
   .kb_rows(kb_rows),

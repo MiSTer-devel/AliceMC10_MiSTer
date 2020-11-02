@@ -7,7 +7,9 @@ module square_gen(
   output dout
 );
 
-parameter STP = 24'd1610;
+// 4Mhz/0.0024=1666 2^24/1666=10070
+parameter STP = 24'd20140;
+//parameter STP = 24'd161000;
 
 reg [23:0] div;
 reg [2:0] nbit;
@@ -25,7 +27,7 @@ end
 assign dout = data[0] ? ~cnt[0] : ~cnt[1];
 
 always @(posedge clk or posedge start)
-  if (start | ~en) div <= 24'd0;
+  if (start) div <= 24'd0;
   else if (en) { pulse, div } <= div + STP;
 
 always @(posedge pulse or posedge start) begin

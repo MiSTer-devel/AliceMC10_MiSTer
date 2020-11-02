@@ -179,9 +179,11 @@ localparam CONF_STR = {
 	"O1,Aspect ratio,4:3,16:9;",
 	"O2,TV Mode,NTSC,PAL;",
 	"-;",
-	"F,k7,Tape Load;",
+	"F,c10,Tape Load;",
 	"TA,Tape Play/Pause;",
 	"TB,Tape Rewind;",
+	"-;",
+	"OC,16k expension;",
 	"-;",
 	"T0,Reset;",
 	"R0,Reset and close OSD;",
@@ -252,6 +254,10 @@ wire vsync;
 wire audio;
 reg ce_pix;
 
+wire [25:0] exp_out;
+wire [9:0] exp_in =  status[12] ? { exp_data, 1'b1, 1'b0 } : 10'd0;
+reg [7:0] exp_data;
+
 mc10 mc10
 (
 	.reset(reset),
@@ -260,8 +266,8 @@ mc10 mc10
 
 	.ps2_key(ps2_key),
 
-	.exp_in(),
-	.exp_out(),
+	.exp_in(exp_in),
+	.exp_out(exp_out),
 
 	.red(VGA_R),
 	.green(VGA_G),
@@ -305,7 +311,7 @@ sdram sdram
 wire k7_dout;
 
 cassette cassette(
-  .clk(clk_sys),
+  .clk(clk_4),
   .play(status[10]),
   .rewind(status[11]),
 

@@ -13,102 +13,67 @@ module cassette(
 
 );
 
-reg en;
-reg play_latch;
+reg ffplay;
+reg ffrewind;
 
 reg [23:0] seq;
 reg [7:0] ibyte;
-reg [3:0] state;
-reg [7:0] length;
+reg [2:0] state;
 reg sq_start;
+reg eof;
 wire done;
 
 parameter
-  IDLE      = 4'h0,
-  START     = 4'h1,
-  NEXT      = 4'h2,
-  LEAD1     = 4'h3,
-  LEAD2     = 4'h4,
-  LEAD3     = 4'h5,
-  READ_DAT1 = 4'h6,
-  READ_DAT2 = 4'h7,
-  READ_DAT3 = 4'h8,
-  READ_DAT4 = 4'h9;
+  IDLE      = 3'h0,
+  START     = 3'h1,
+  NEXT      = 3'h2,
+  READ1     = 3'h3,
+  READ2     = 3'h4,
+  READ3     = 3'h5,
+  READ4     = 3'h6;
+
 
 always @(posedge clk) begin
 
-  play_latch <= play;
+  ffplay <= play;
+  ffrewind <= rewind;
 
-  if (play_latch ^ play) state <= state == IDLE ? START : IDLE;
+  if (ffplay ^ play) state <= state == IDLE ? START : IDLE;
+  if (ffrewind ^ rewind) begin
+    seq <= 24'd0;
+    sdram_addr <= 25'd0;
+    state <= IDLE;
+  end
 
   case (state)
     START: begin
-      length <= 8'h7f;
-      state <= LEAD1;
+      seq <= 24'd0;
+      state <= NEXT;
     end
-
     NEXT: begin
-
-      state <= READ_DAT1;
-      if (seq)
-        case (seq)
-          24'h553c00: begin // name block
-            state <= READ_DAT1;
-            length <= sdram_data;
-            sdram_addr <= sdram_addr + 25'd1;
-          end
-          default: begin
-            state <= IDLE;
-          end
-        endcase
-      else
-        length <= 8'd3;
-
-    end
-
-    LEAD1: begin
-      ibyte <= 8'h55;
-      sq_start <= 1'b1;
-      state <= LEAD2;
-    end
-    LEAD2: begin
-      sq_start <= 1'b0;
-      state <= done ? LEAD3 : LEAD2;
-    end
-    LEAD3: begin
-      if (length != 0) begin
-        length <= length - 8'd1;
-        state <= LEAD1;
-      end
-      else begin
-        seq <= 24'd0;
-        state <= NEXT;
-      end
-    end
-
-    READ_DAT1: begin
-      sdram_rd <= 1'b1;
-      state <= READ_DAT2;
-    end
-    READ_DAT2: begin
+      state <= READ1;
       sdram_rd <= 1'b0;
-      sdram_addr <= sdram_addr + 25'd1;
-      seq <= { seq[15:0], sdram_data };
-      state <= READ_DAT3;
+      eof <= 1'd0;
+      if (seq == 24'h553cff) eof <= 1'd1;
+    end
+    READ1: begin
+      sdram_rd <= 1'b1;
+      state <= READ2;
+    end
+    READ2: begin
+      ibyte <= sdram_data;
+      sdram_rd <= 1'b0;
+      state <= READ3;
       sq_start <= 1'b1;
     end
-    READ_DAT3: begin
-      ibyte <= sdram_data;
+    READ3: begin
       sq_start <= 1'b0;
-      state <= done ? READ_DAT4 : READ_DAT3;
+      state <= done ? READ4 : READ3;
     end
-    READ_DAT4: begin
-      if (length != 0) begin
-        length <= length - 8'd1;
-        state <= READ_DAT1;
-      end
-      else
-        state <= NEXT;
+    READ4: begin
+      seq <= { seq[15:0], sdram_data };
+      sdram_addr <= sdram_addr + 25'd1;
+      state <= eof ? IDLE : NEXT;
     end
   endcase
 
