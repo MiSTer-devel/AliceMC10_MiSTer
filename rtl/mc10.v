@@ -4,8 +4,17 @@ module mc10 (
   input clk_sys,
   input clk_4,
   input [10:0] ps2_key,
-  input [9:0] exp_in, // D7-D0, sel, nmi
-  output [25:0] exp_out, // D7-D0, R/W, A15-A0, reset, E
+
+  // expansion
+  input [7:0] exp_din,
+  input exp_sel,
+  input exp_nmi,
+  output [7:0] exp_dout,
+  output exp_rw,
+  output [15:0] exp_addr,
+  output exp_reset,
+  output exp_e,
+
   output [7:0] red,
   output [7:0] green,
   output [7:0] blue,
@@ -35,13 +44,11 @@ assign blue[7:4] = b4;
 
 assign audio = U8[5];
 
-assign exp_out = {
-  cpu_dout,
-  cpu_rw,
-  cpu_addr,
-  reset,
-  E_CLK
-};
+assign exp_addr = cpu_addr;
+assign exp_rw = cpu_rw;
+assign exp_dout = cpu_dout;
+assign exp_reset = reset;
+assign exp_e = E_CLK;
 
 reg [1:0] clk_div;
 always @(posedge clk_4)
@@ -51,7 +58,7 @@ wire clk_cpu = clk_div[1];
 
 reg [7:0] data_bus;
 always @(posedge clk_sys)
-  data_bus <= rom_dout | (U4_Y1[1] ? 8'd0 : ram_dout) | U14_out | exp_in[9:2];
+  data_bus <= rom_dout | (U4_Y1[1] ? 8'd0 : ram_dout) | U14_out | exp_din;
 
 MC6803_gen2 U1(
   .clk(clk_cpu),
@@ -59,7 +66,7 @@ MC6803_gen2 U1(
   .hold(0),
   .halt(0),
   .irq(0),
-  .nmi(exp_in[0]),
+  .nmi(exp_nmi),
   .PORT_A_IN(),
   .PORT_B_IN({ cin, 2'b0, shift, 1'b0 }),
   .DATA_IN(data_bus),
@@ -80,7 +87,7 @@ rom_mc10 U3(
 
 x74155 U4(
   .C(2'b01),
-  .G({ exp_in[1] | cpu_addr[12], exp_in[1] }),
+  .G({ exp_sel | cpu_addr[12], exp_sel }),
   .A(cpu_addr[14]),
   .B(cpu_addr[15]),
   .Y1(U4_Y1),

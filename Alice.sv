@@ -181,9 +181,9 @@ localparam CONF_STR = {
 	"-;",
 	"F,c10,Tape Load;",
 	"TA,Tape Play/Pause;",
-	"TB,Tape Rewind;",
+	"RB,Tape Rewind;",
 	"-;",
-	"OC,16k expension;",
+	"OC,16k expansion,Off,On;",
 	"-;",
 	"T0,Reset;",
 	"R0,Reset and close OSD;",
@@ -254,9 +254,11 @@ wire vsync;
 wire audio;
 reg ce_pix;
 
-wire [25:0] exp_out;
-wire [9:0] exp_in =  status[12] ? { exp_data, 1'b1, 1'b0 } : 10'd0;
-reg [7:0] exp_data;
+wire [15:0] exp_addr;
+wire [7:0] exp_ram_dout;
+wire [7:0] exp_dout;
+wire exp_rw;
+wire exp_sel = status[12] && (exp_addr[15:12]  > 4 && exp_addr[15:12] < 9);
 
 mc10 mc10
 (
@@ -266,8 +268,14 @@ mc10 mc10
 
 	.ps2_key(ps2_key),
 
-	.exp_in(exp_in),
-	.exp_out(exp_out),
+	.exp_din(exp_sel ? exp_ram_dout : 8'd0),
+	.exp_sel(exp_sel),
+	.exp_nmi(1'b0),
+	.exp_dout(exp_dout),
+	.exp_rw(exp_rw),
+	.exp_addr(exp_addr),
+	.exp_reset(),
+	.exp_e(),
 
 	.red(VGA_R),
 	.green(VGA_G),
@@ -322,5 +330,12 @@ cassette cassette(
   .data(k7_dout)
 );
 
+spram exp_ram(
+  .clock(clk_sys),
+  .address(exp_addr[14:0]),
+  .data(exp_dout),
+  .wren(~exp_rw),
+  .q(exp_ram_dout)
+);
 
 endmodule

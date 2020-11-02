@@ -7,6 +7,7 @@ set_global_assignment -name VERILOG_FILE rtl/6847/rom_char.v
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/keyboard.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/sdram.sv
 set_global_assignment -name QIP_FILE rtl/dpram/dpram.qip
+set_global_assignment -name QIP_FILE rtl/spram/spram.qip
 set_global_assignment -name VERILOG_FILE rtl/rom_mc10.v
 set_global_assignment -name VERILOG_FILE rtl/cassette.v
 set_global_assignment -name VERILOG_FILE rtl/x14503B.v
