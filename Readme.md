@@ -13,4 +13,4 @@ TODO:
 5. Joystick is not implemented.
 6. Fix keyboard mapping.
 7. RS-232 interface.
-8. Cassette interface.
+8. ~~Cassette interface.~~
