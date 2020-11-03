@@ -334,7 +334,7 @@ spram exp_ram(
   .clock(clk_sys),
   .address(exp_addr[14:0]),
   .data(exp_dout),
-  .wren(~exp_rw),
+  .wren(~exp_rw & exp_sel),
   .q(exp_ram_dout)
 );
 
