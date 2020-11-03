@@ -20,7 +20,7 @@ reg [23:0] seq;
 reg [7:0] ibyte;
 reg [2:0] state;
 reg sq_start;
-reg eof;
+reg [1:0] eof;
 wire done;
 
 parameter
@@ -43,6 +43,7 @@ always @(posedge clk) begin
     seq <= 24'd0;
     sdram_addr <= 25'd0;
     state <= IDLE;
+    eof <= 2'd0;
   end
 
   case (state)
@@ -53,8 +54,9 @@ always @(posedge clk) begin
     NEXT: begin
       state <= READ1;
       sdram_rd <= 1'b0;
-      eof <= 1'd0;
-      if (seq == 24'h553cff) eof <= 1'd1;
+      eof <= 2'd0;
+      if (seq == 24'h553cff) eof <= 2'd1;
+      if (seq == 24'h00ff55 && eof == 2'd1) eof <= 2'd2;
     end
     READ1: begin
       sdram_rd <= 1'b1;
@@ -73,7 +75,7 @@ always @(posedge clk) begin
     READ4: begin
       seq <= { seq[15:0], sdram_data };
       sdram_addr <= sdram_addr + 25'd1;
-      state <= eof ? IDLE : NEXT;
+      state <= eof == 2'd2 ? IDLE : NEXT;
     end
   endcase
 
