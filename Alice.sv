@@ -182,8 +182,8 @@ localparam CONF_STR = {
 	"F,c10,Tape Load;",
 	"TA,Tape Play/Pause;",
 	"RB,Tape Rewind;",
-	"-;",
 	"OC,16k expansion,Off,On;",
+	"J0,Button;",
 	"-;",
 	"T0,Reset;",
 	"R0,Reset and close OSD;",
@@ -201,6 +201,8 @@ wire  [7:0] ioctl_dout;
 wire        ioctl_download;
 wire  [7:0] ioctl_index;
 wire		ioctl_wait;
+
+wire [15:0] joy1, joy2;
 
 hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
@@ -223,7 +225,11 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_dout),
 	.ioctl_wait(ioctl_wait),
-	.ioctl_index(ioctl_index)
+	.ioctl_index(ioctl_index),
+
+	.joystick_0(joy1),
+	.joystick_1(joy2)
+
 );
 
 
@@ -259,6 +265,7 @@ wire [7:0] exp_ram_dout;
 wire [7:0] exp_dout;
 wire exp_rw;
 wire exp_sel = status[12] && (exp_addr[15:12]  > 4 && exp_addr[15:12] < 9);
+wire [7:0] joy_dout;
 
 mc10 mc10
 (
@@ -268,7 +275,7 @@ mc10 mc10
 
 	.ps2_key(ps2_key),
 
-	.exp_din(exp_sel ? exp_ram_dout : 8'd0),
+	.exp_din((exp_sel ? exp_ram_dout : 8'd0) | joy_dout),
 	.exp_sel(exp_sel),
 	.exp_nmi(1'b0),
 	.exp_dout(exp_dout),
@@ -328,6 +335,13 @@ cassette cassette(
   .sdram_rd(sdram_rd),
 
   .data(k7_dout)
+);
+
+joysticks joysticks(
+  .joy1(joy1),
+  .joy2(joy2),
+  .addr(exp_addr),
+  .dout(joy_dout)
 );
 
 spram exp_ram(

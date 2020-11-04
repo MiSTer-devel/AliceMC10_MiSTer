@@ -5,7 +5,7 @@ module mc10 (
   input clk_4,
   input [10:0] ps2_key,
 
-  // expansion
+  // expansion connector
   input [7:0] exp_din,
   input exp_sel,
   input exp_nmi,
