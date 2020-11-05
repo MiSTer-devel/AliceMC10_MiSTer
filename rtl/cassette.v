@@ -9,9 +9,12 @@ module cassette(
   input [7:0] sdram_data,
   output reg sdram_rd,
 
-  output data
+  output data,
+  output [2:0] status
 
 );
+
+assign status = state;
 
 reg ffplay;
 reg ffrewind;
@@ -38,14 +41,6 @@ always @(posedge clk) begin
   ffplay <= play;
   ffrewind <= rewind;
 
-  if (ffplay ^ play) state <= state == IDLE ? START : IDLE;
-  if (ffrewind ^ rewind) begin
-    seq <= 24'd0;
-    sdram_addr <= 25'd0;
-    state <= IDLE;
-    eof <= 2'd0;
-  end
-
   case (state)
     START: begin
       seq <= 24'd0;
@@ -54,7 +49,6 @@ always @(posedge clk) begin
     NEXT: begin
       state <= READ1;
       sdram_rd <= 1'b0;
-      eof <= 2'd0;
       if (seq == 24'h553cff) eof <= 2'd1;
       if (seq == 24'h00ff55 && eof == 2'd1) eof <= 2'd2;
     end
@@ -78,6 +72,14 @@ always @(posedge clk) begin
       state <= eof == 2'd2 ? IDLE : NEXT;
     end
   endcase
+
+  if (play && ffplay ^ play) state <= state == IDLE ? START : IDLE;
+  if (ffrewind ^ rewind) begin
+    seq <= 24'd0;
+    sdram_addr <= 25'd0;
+    state <= IDLE;
+    eof <= 2'd0;
+  end
 
 end
 

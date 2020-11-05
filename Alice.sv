@@ -172,21 +172,23 @@ assign BUTTONS = 0;
 assign VIDEO_ARX = status[1] ? 8'd16 : 8'd4;
 assign VIDEO_ARY = status[1] ? 8'd9  : 8'd3;
 
+//       exp on/off  Tape rewind   Tape play                    reset
+// V ...     C             B           A      9 8 7 6 5 4 3 2 1   0
 `include "build_id.v"
 localparam CONF_STR = {
 	"AliceMC10;;",
 	"-;",
 	"O1,Aspect ratio,4:3,16:9;",
-	"O2,TV Mode,NTSC,PAL;",
-	"-;",
-	"F,c10,Tape Load;",
-	"TA,Tape Play/Pause;",
-	"RB,Tape Rewind;",
 	"OC,16k expansion,Off,On;",
-	"J0,Button;",
+	"-;",
+	"F1,c10,Tape Load;",
+	"TA,Tape Play/Pause;",
+	"RB,Tape Rewind and close OSD;",
+	"OD,Show tape status line,Off,On;",
 	"-;",
 	"T0,Reset;",
 	"R0,Reset and close OSD;",
+	"J1,Button;",
 	"V,v",`BUILD_DATE
 };
 
@@ -266,6 +268,8 @@ wire [7:0] exp_dout;
 wire exp_rw;
 wire exp_sel = status[12] && (exp_addr[15:12]  > 4 && exp_addr[15:12] < 9);
 wire [7:0] joy_dout;
+wire [2:0] tape_status;
+wire [7:0] mc10_red, ov_red;
 
 mc10 mc10
 (
@@ -284,12 +288,12 @@ mc10 mc10
 	.exp_reset(),
 	.exp_e(),
 
-	.red(VGA_R),
+	.red(mc10_red),
 	.green(VGA_G),
 	.blue(VGA_B),
 
-	.hsync(VGA_HS),
-	.vsync(VGA_VS),
+	.hsync(hsync),
+	.vsync(vsync),
 	.hblank(hblank),
 	.vblank(vblank),
 
@@ -303,6 +307,10 @@ assign AUDIO_R = { audio, audio, 13'd0 };
 assign CE_PIXEL = ce_pix;
 assign CLK_VIDEO = clk_sys;
 assign VGA_DE = ~(hblank | vblank);
+assign VGA_HS = hsync;
+assign VGA_VS = vsync;
+assign VGA_R = mc10_red | ov_red;
+
 always @(posedge clk_sys) ce_pix = ~ce_pix;
 
 wire [24:0] sdram_addr;
@@ -334,7 +342,18 @@ cassette cassette(
   .sdram_data(sdram_data),
   .sdram_rd(sdram_rd),
 
-  .data(k7_dout)
+  .data(k7_dout),
+  .status(tape_status)
+);
+
+// it shows tape status
+overlay ov(
+  .clk_vid(clk_sys),
+  .vsync(vsync),
+  .hsync(hsync),
+  .status({ k7_dout, tape_status }),
+  .color(ov_red),
+  .en(status[13])
 );
 
 joysticks joysticks(
