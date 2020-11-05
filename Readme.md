@@ -26,6 +26,6 @@ To do
 6. ~~Fix keyboard mapping (backspace key, works like original: mapped to ctrl+A).~~
 7. ~~Fix OSD options.~~
 8. ~~Cassette interface.~~
-9. Add overlay for tape status?
+9. ~~Add overlay for tape status?~~
 
 I regularly update the RBF file for testing in /releases. There will be an official release when this list is completed :sweat_smile:
