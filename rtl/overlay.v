@@ -1,6 +1,8 @@
 
 module overlay(
   input clk_vid,
+  input [7:0] din,
+  input sample,
   input [3:0] status,
   input hsync,
   input vsync,
@@ -8,17 +10,25 @@ module overlay(
   input en
 );
 
-assign color = en & status[2:0] != 0 & count < 40 & active ? 8'hff : 0;
+assign color = en & status[2:0] != 0 & vcount > 480-db[7:1] ? 8'h80 : 0;
 
-reg [9:0] count;
-reg active;
+wire [6:0] idx = hcount[12:6] - 7'd11;
+wire [7:0] db = seq >> { idx, 2'b0 };
+reg [255:0] seq;
+reg [9:0] vcount;
+reg [12:0] hcount;
 
 always @(posedge vsync)
-  active <= status[3];
+  seq <= { seq[247:0], din };
+
+always @(posedge clk_vid) begin
+  hcount <= hcount + 10'd1;
+  if (~hsync) hcount <= 10'd0;
+end
 
 always @(posedge hsync) begin
-  count <= count + 10'd1;
-  if (~vsync) count <= 10'd0;
+  vcount <= vcount + 10'd1;
+  if (~vsync) vcount <= 10'd0;
 end
 
 endmodule

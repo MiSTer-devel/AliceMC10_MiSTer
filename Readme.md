@@ -6,10 +6,12 @@ It's a work in progress.
 
 Many games/programs already work, however, there's currently a bug in the video module that prevents some games from changing the display mode. Other MiSTer contributors and I are working on the problem right now.
 
-About cassettes
----------------
+Cassettes
+---------
 
-The core can only load .c10 files. Therefore I provided a small Python script `k72c10.py` that can turn a .k7 file from Alice into a .c10 file. It simply adds the two leader sections before and after the name block.
+To facilitate the use of the cassette player, an option to display the data stream on the screen is available form the OSD.
+
+The core is compatible with .c10 tape files. A small script `k72c10.py` is available for converting .k7 files from Alice into .c10 files. The script adds the two leader sections before and after the name block.
 
 Usage: `python k72c10.py <path to k7 file>`.
 

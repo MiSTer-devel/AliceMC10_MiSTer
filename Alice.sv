@@ -183,8 +183,9 @@ localparam CONF_STR = {
 	"-;",
 	"F1,c10,Tape Load;",
 	"TA,Tape Play/Pause;",
-	"RB,Tape Rewind and close OSD;",
-	"OD,Show tape status line,Off,On;",
+	"TB,Tape Rewind;",
+	"OD,Show tape stream,Off,On;",
+	"OE,Enable tape audio,Off,On;",
 	"-;",
 	"T0,Reset;",
 	"R0,Reset and close OSD;",
@@ -270,6 +271,7 @@ wire exp_sel = status[12] && (exp_addr[15:12]  > 4 && exp_addr[15:12] < 9);
 wire [7:0] joy_dout;
 wire [2:0] tape_status;
 wire [7:0] mc10_red, ov_red;
+wire tape_audio = status[14] ? k7_dout : 1'b0;
 
 mc10 mc10
 (
@@ -302,8 +304,8 @@ mc10 mc10
 	.cin(k7_dout)
 );
 
-assign AUDIO_L = { audio, audio, 13'd0 };
-assign AUDIO_R = { audio, audio, 13'd0 };
+assign AUDIO_L = { audio, audio, 6'd0, tape_audio, 7'd0 };
+assign AUDIO_R = { audio, audio, 6'd0, tape_audio, 7'd0 };
 assign CE_PIXEL = ce_pix;
 assign CLK_VIDEO = clk_sys;
 assign VGA_DE = ~(hblank | vblank);
@@ -349,6 +351,8 @@ cassette cassette(
 // it shows tape status
 overlay ov(
   .clk_vid(clk_sys),
+  .din(sdram_data),
+  .sample(sdram_rd),
   .vsync(vsync),
   .hsync(hsync),
   .status({ k7_dout, tape_status }),
