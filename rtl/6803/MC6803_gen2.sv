@@ -159,7 +159,7 @@ begin
 //port B
 	if(P2_E)
 	begin
-		data_in = (PORT_B_IN_s & (~DDR2))|(PORT_B_OUT & (DDR2));
+		data_in = 8'b0100_0000 | (PORT_B_IN_s & (~DDR2))|(PORT_B_OUT & (DDR2));
 		if(E_CLK & (~rw))
 			next_port_b = DATA_OUT[4:0];
 		else

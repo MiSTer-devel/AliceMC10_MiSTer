@@ -15,6 +15,9 @@ module mc10 (
   output exp_reset,
   output exp_e,
 
+  input rs232_a,
+  input rs232_b,
+
   output [7:0] red,
   output [7:0] green,
   output [7:0] blue,
@@ -68,7 +71,7 @@ MC6803_gen2 U1(
   .irq(0),
   .nmi(exp_nmi),
   .PORT_A_IN(),
-  .PORT_B_IN({ cin, 2'b0, shift, 1'b0 }),
+  .PORT_B_IN({ cin, rs232_a, rs232_b|reset, shift, reset }),
   .DATA_IN(data_bus),
   .PORT_A_OUT(KR),
   .PORT_B_OUT(),

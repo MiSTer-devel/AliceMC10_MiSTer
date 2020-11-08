@@ -205,7 +205,9 @@ wire        ioctl_download;
 wire  [7:0] ioctl_index;
 wire		ioctl_wait;
 
-wire [15:0] joy1, joy2;
+wire [31:0] joy0, joy1;
+wire rs1 = joy0[4] | joy0[1];
+wire rs2 = joy0[4] | joy0[0];
 
 hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
@@ -230,8 +232,8 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.ioctl_wait(ioctl_wait),
 	.ioctl_index(ioctl_index),
 
-	.joystick_0(joy1),
-	.joystick_1(joy2)
+	.joystick_0(joy0),
+	.joystick_1(joy1)
 
 );
 
@@ -283,12 +285,15 @@ mc10 mc10
 
 	.exp_din((exp_sel ? exp_ram_dout : 8'd0) | joy_dout),
 	.exp_sel(exp_sel),
-	.exp_nmi(1'b0),
+	.exp_nmi(),
 	.exp_dout(exp_dout),
 	.exp_rw(exp_rw),
 	.exp_addr(exp_addr),
 	.exp_reset(),
 	.exp_e(),
+
+	.rs232_a(~rs1),
+	.rs232_b(~rs2),
 
 	.red(mc10_red),
 	.green(VGA_G),
@@ -301,7 +306,7 @@ mc10 mc10
 
 	.audio(audio),
 
-	.cin(k7_dout)
+	.cin(k7_dout & tape_status)
 );
 
 assign AUDIO_L = { audio, audio, 6'd0, tape_audio, 7'd0 };
@@ -361,8 +366,8 @@ overlay ov(
 );
 
 joysticks joysticks(
-  .joy1(joy1),
-  .joy2(joy2),
+  .joy1(joy0),
+  .joy2(joy1),
   .addr(exp_addr),
   .dout(joy_dout)
 );
