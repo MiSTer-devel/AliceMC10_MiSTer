@@ -30,7 +30,7 @@ always @(posedge clk) begin
 end
 
 mc6847 vdg(
-  .clk(clk),
+  .clk(clk_sys),
   .clk_ena(clk_ena),
   .reset(reset),
   .da0(),

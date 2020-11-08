@@ -243,6 +243,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 wire locked;
 wire clk_sys;
 wire clk_4; // 4MHz
+wire clk_vid;
 
 pll pll
 (
@@ -250,6 +251,7 @@ pll pll
 	.rst(0),
 	.outclk_0(clk_sys),
 	.outclk_1(clk_4),
+	.outclk_2(clk_vid),
 	.locked(locked)
 );
 
@@ -280,6 +282,7 @@ mc10 mc10
 	.reset(reset),
 	.clk_sys(clk_sys),
 	.clk_4(clk_4),
+	.clk_vid(clk_vid),
 
 	.ps2_key(ps2_key),
 
