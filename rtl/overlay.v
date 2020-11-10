@@ -12,7 +12,7 @@ module overlay(
 
 assign color = en & status[2:0] != 0 & vcount > 480-db[7:1] ? 8'h80 : 0;
 
-wire [6:0] idx = hcount[12:6] - 7'd11;
+wire [6:0] idx = hcount[10:4] - 7'd11;
 wire [7:0] db = seq >> { idx, 2'b0 };
 reg [255:0] seq;
 reg [9:0] vcount;

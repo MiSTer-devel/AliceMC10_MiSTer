@@ -3,7 +3,6 @@ module mc10 (
   input reset,
   input clk_sys,
   input clk_4,
-  input clk_vid,
   input [10:0] ps2_key,
 
   // expansion connector
@@ -26,6 +25,8 @@ module mc10 (
   output vsync,
   output hblank,
   output vblank,
+  output ce_pix,
+
   output audio,
   input cin
 );
@@ -118,7 +119,7 @@ dpram u9_u10(
 
 mc6847_mc10 U11(
   .clk(clk_4),
-  .clk_sys(clk_vid),
+  .clk_sys(clk_sys),
   .clk_ena(1'b1),
   .reset(reset),
   .videoaddr(vdg_addr),
@@ -135,7 +136,8 @@ mc6847_mc10 U11(
   .hsync(hsync),
   .vsync(vsync),
   .hblank(hblank),
-  .vblank(vblank)
+  .vblank(vblank),
+  .ce_pix(ce_pix)
 );
 
 x14503B U14(

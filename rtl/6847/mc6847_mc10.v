@@ -18,7 +18,8 @@ module mc6847_mc10(
   output            hsync,
   output            vsync,
   output            hblank,
-  output            vblank
+  output            vblank,
+  output            ce_pix
 );
 
 reg [7:0] data;
@@ -29,8 +30,16 @@ always @(posedge clk) begin
   inverted <= inv;
 end
 
+reg clk_div;
+always @(posedge clk_sys)
+  clk_div <= ~clk_div;
+
+assign ce_pix = clk_div;
+wire clk_vid = clk_div;
+
+
 mc6847 vdg(
-  .clk(clk_sys),
+  .clk(clk_vid),
   .clk_ena(clk_ena),
   .reset(reset),
   .da0(),
