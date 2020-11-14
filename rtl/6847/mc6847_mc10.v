@@ -30,17 +30,17 @@ always @(posedge clk) begin
   inverted <= inv;
 end
 
-reg clk_div;
+reg [1:0] clk_div;
 always @(posedge clk_sys)
-  clk_div <= ~clk_div;
+  clk_div <= clk_div + 2'd1;
 
-assign ce_pix = clk_div;
-wire clk_vid = clk_div;
+assign ce_pix = clk_div[0];
+wire clk_vid = clk_div[0];
 
 
 mc6847 vdg(
   .clk(clk_vid),
-  .clk_ena(clk_ena),
+  .clk_ena(clk_div[1]),
   .reset(reset),
   .da0(),
   .videoaddr(videoaddr),

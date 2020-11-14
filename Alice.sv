@@ -310,8 +310,8 @@ mc10 mc10
 	.cin(k7_dout & tape_status)
 );
 
-assign AUDIO_L = { audio, audio, 6'd0, tape_audio, 7'd0 };
-assign AUDIO_R = { audio, audio, 6'd0, tape_audio, 7'd0 };
+assign AUDIO_L = { audio, audio, 3'd0, tape_audio, 10'd0 };
+assign AUDIO_R = { audio, audio, 3'd0, tape_audio, 10'd0 };
 assign CE_PIXEL = ce_pix;
 assign CLK_VIDEO = clk_sys;
 assign VGA_DE = ~(hblank | vblank);
