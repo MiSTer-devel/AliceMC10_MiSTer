@@ -43,10 +43,6 @@ wire [5:0] U14_out;
 wire shift = kb_rows[6];
 reg [5:0] U8;
 
-assign red[7:4] = r4;
-assign green[7:4] = g4;
-assign blue[7:4] = b4;
-
 assign audio = U8[5];
 
 assign exp_addr = cpu_addr;
@@ -117,11 +113,16 @@ dpram u9_u10(
   .q_b(ram_dout_b)
 );
 
-mc6847_mc10 U11(
-  .clk(clk_4),
-  .clk_sys(clk_sys),
-  .clk_ena(1'b1),
+
+reg [3:0] clk_vid;
+always @(posedge clk_sys)
+  clk_vid <= clk_vid + 4'd1;
+
+mc6847 U11(
+  .clk(clk_vid[1]),
+  .clk_ena(clk_vid[2]),
   .reset(reset),
+  .da0(),
   .videoaddr(vdg_addr),
   .dd(ram_dout_b),
   .an_g(U8[3]),
@@ -130,14 +131,19 @@ mc6847_mc10 U11(
   .gm({ U8[0], U8[1], U8[2] }),
   .css(U8[4]),
   .inv(ram_dout_b[6]),
-  .red(r4),
-  .green(g4),
-  .blue(b4),
+  .red(red),
+  .green(green),
+  .blue(blue),
   .hsync(hsync),
   .vsync(vsync),
   .hblank(hblank),
   .vblank(vblank),
-  .ce_pix(ce_pix)
+  .artifact_en(1'b1),
+  .artifact_set(1'b0),
+  .artifact_phase(1'b1),
+  .cvbs(),
+  .black_backgnd(1'b1),
+  .pixel_clk(ce_pix)
 );
 
 x14503B U14(

@@ -2,7 +2,6 @@ set_global_assignment -name VERILOG_FILE rtl/mc10.v
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/6803/mc6801_core.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/6803/MC6803_gen2.sv
 set_global_assignment -name VERILOG_FILE rtl/6847/mc6847.v
-set_global_assignment -name VERILOG_FILE rtl/6847/mc6847_mc10.v
 set_global_assignment -name VERILOG_FILE rtl/6847/rom_char.v
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/keyboard.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/sdram.sv

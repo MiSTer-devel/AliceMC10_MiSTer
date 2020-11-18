@@ -13,9 +13,9 @@ module mc6847 (
                input [2:0]       gm,
                input             css,
                input             inv,
-               output reg [3:0]  red,
-               output reg [3:0]  green,
-               output reg [3:0]  blue,
+               output reg [7:0]  red,
+               output reg [7:0]  green,
+               output reg [7:0]  blue,
                output reg        hsync,
                output reg        vsync,
                output reg        hblank,
@@ -25,9 +25,13 @@ module mc6847 (
                input             artifact_phase,
                output [7:0]      cvbs,
                input             black_backgnd,
-               output reg [10:0] char_a,
-               input [7:0]       char_d_o
+               output reg        pixel_clk
+              //  output reg [10:0] char_a,
+              //  input [7:0]       char_d_o
                );
+
+  reg [10:0] char_a;
+  wire [7:0] char_d_o;
 
    parameter CVBS_NOT_VGA       = 0;
 
@@ -110,7 +114,7 @@ module mc6847 (
    reg [3:0]                     row_v;
 
 
-   function [11:0] map_palette;
+   function [23:0] map_palette;
       input [7:0]                vga_char_d_o;
       // parts of input
       reg                        css_v;
@@ -159,7 +163,7 @@ module mc6847 (
                 end
               b = 2'b00;
            end
-         map_palette = { r, 2'b0, g, 2'b0, b, 2'b0};
+         map_palette = { r, 6'b0, g, 6'b0, b, 6'b0};
       end
    endfunction
 
@@ -627,7 +631,8 @@ module mc6847 (
                   if (cvbs_clk_ena)
                     begin
                        if (cvbs_hblank == 1'b0 && cvbs_vblank == 1'b0)
-                         {red, green, blue} <= map_palette (vga_char_d_o);
+                         //{red, green, blue} <= map_palette (vga_char_d_o);
+                         {red,green,blue}<=map_palette(pixel_char_d_o);
                        else
                          {red, green, blue} <= 0;
                     end
@@ -654,11 +659,11 @@ module mc6847 (
                                       else if (p_in[3] == 1'b1 && vga_char_d_o[3] == 1'b1)
                                         p_out[3:0] <= 4'b1100;
                                       else if (p_in[3] == 1'b0 && vga_char_d_o[3] == 1'b1)
-                                      //p_out[3:0] <= 4'b1011;  // red
-                                        p_out[3:0] <= 4'b1101;  // cyan
+                                       p_out[3:0] <= artifact_phase ? 4'b1010 : 4'b1011;  // red if normal, blue if reverse
+                                        //p_out[3:0] <= 4'b1101;  // cyan
                                       else
-                                      //p_out[3:0] <= 4'b1010;  // blue
-                                        p_out[3:0] <= 4'b1111;  // orange
+                                        p_out[3:0] <= artifact_phase ? 4'b1011 : 4'b1010;  // blue if normal, red if reverse
+                                        //p_out[3:0] <= 4'b1111;  // orange
                                    end // if (cnt != 0)
                                  {red, green, blue} <= map_palette (p_out);
                                  p_in <= vga_char_d_o;
@@ -681,6 +686,7 @@ module mc6847 (
                   vsync  <= cvbs_vsync;
                   hblank <= cvbs_hblank;
                   vblank <= cvbs_vblank;
+                  pixel_clk <= cvbs_clk_ena;
                end
              else
                begin
@@ -688,6 +694,7 @@ module mc6847 (
                   vsync  <= vga_vsync;
                   hblank <= !vga_hborder;
                   vblank <= !cvbs_vborder;
+                  pixel_clk <= clk_ena;
                end // else: !if(CVBS_NOT_VGA)
           end // else: !if(CVBS_NOT_VGA)
      end // always @ (posedge clk, posedge reset)
@@ -702,5 +709,15 @@ module mc6847 (
         if (clk_ena)
           vga_char_d_o <= VRAM[vga_linebuf_addr];
      end
+
+    // wire [7:0] char_data = (vdg_char_addr[3:0] < 3 || vdg_char_addr[3:0] > 10) ? 8'h00 : chr_dout;
+    wire [7:0] char_data;
+    wire [2:0] char_a_b = char_a[3:0] - 2'b11;
+    assign char_d_o = (char_a[3:0] < 3 || char_a[3:0] > 10) ? 8'h00 : char_data;
+    rom_char rom_char(
+      .clk(clk),
+      .addr({ char_a[9:4], char_a_b }),
+      .dout(char_data)
+    );
 
 endmodule
