@@ -23,6 +23,7 @@ module mc6847 (
                input             artifact_en,
                input             artifact_set,
                input             artifact_phase,
+               input             overscan,
                output [7:0]      cvbs,
                input             black_backgnd,
                output reg        pixel_clk
@@ -33,21 +34,21 @@ module mc6847 (
   reg [10:0] char_a;
   wire [7:0] char_d_o;
 
-   parameter CVBS_NOT_VGA       = 0;
+   parameter CVBS_NOT_VGA       = 1;
 
-   parameter H_FRONT_PORCH      = 8;
-   parameter H_HORIZ_SYNC       = H_FRONT_PORCH + 48;
-   parameter H_BACK_PORCH       = H_HORIZ_SYNC + 24;
-   parameter H_LEFT_BORDER      = H_BACK_PORCH + 32;  // adjust for hblank de-assert @sys_count=6
+   parameter H_FRONT_PORCH      = 11-1+1;
+   parameter H_HORIZ_SYNC       = H_FRONT_PORCH + 35+2;
+   parameter H_BACK_PORCH       = H_HORIZ_SYNC + 34+1;
+   parameter H_LEFT_BORDER      = H_BACK_PORCH + 61+1+3;  // adjust for hblank de-assert @sys_count=6
    parameter H_LEFT_RSTADDR     = H_LEFT_BORDER - 16;
    parameter H_VIDEO            = H_LEFT_BORDER + 256;
-   parameter H_RIGHT_BORDER     = H_VIDEO + 31;
+   parameter H_RIGHT_BORDER     = H_VIDEO + 61+1-3;
    parameter H_TOTAL_PER_LINE   = H_RIGHT_BORDER;
 
    parameter V2_FRONT_PORCH     = 2;
    parameter V2_VERTICAL_SYNC   = V2_FRONT_PORCH + 2;
    parameter V2_BACK_PORCH      = V2_VERTICAL_SYNC + 12;
-   parameter V2_TOP_BORDER      = V2_BACK_PORCH + 26;  // + 25;  // +25 for PAL
+   parameter V2_TOP_BORDER      = V2_BACK_PORCH + 27;  // + 25;  // +25 for PAL
    parameter V2_VIDEO           = V2_TOP_BORDER + 192;
    parameter V2_BOTTOM_BORDER   = V2_VIDEO + 27;  // + 25;       // +25 for PAL
    parameter V2_TOTAL_PER_FIELD = V2_BOTTOM_BORDER;
@@ -65,6 +66,8 @@ module mc6847 (
    reg                           vga_vsync;
    reg                           vga_hblank;
    reg                           vga_vblank;
+   reg                           vga_active_disp_h;
+   reg                           vga_active_disp_v;
    reg [8:0]                     vga_linebuf_addr;
    reg [7:0]                     vga_char_d_o;
    reg                           vga_hborder;
@@ -76,6 +79,8 @@ module mc6847 (
    reg                           cvbs_vsync;
    reg                           cvbs_hblank;
    reg                           cvbs_vblank;
+   reg                           cvbs_active_disp_h;
+   reg                           cvbs_active_disp_v;
    //wire                    cvbs_hborder; // unused
    reg                           cvbs_vborder;
    wire                          cvbs_linebuf_we;
@@ -144,7 +149,7 @@ module mc6847 (
                 3'b100: begin r = 2'b11; g = 2'b11; b=2'b11; end // white
                 3'b101: begin r = 2'b00; g = 2'b11; b=2'b11; end // cyan
                 3'b110: begin r = 2'b11; g = 2'b00; b=2'b11; end // magenta
-                3'b111: begin r = 2'b11; g = 2'b11; b=2'b00; end // orange
+                3'b111: begin r = 2'b11; g = 2'b10; b=2'b00; end // orange
               endcase
            end
          else
@@ -230,23 +235,33 @@ module mc6847 (
                        vga_h_count = vga_h_count + 1;
                     end
 
-                  if (vga_h_count == H_FRONT_PORCH)
+                  if (vga_h_count == H_FRONT_PORCH) begin
+                    vga_active_disp_h <= 1'b0;
                     vga_hsync <= 1'b0;
+                  end
                   else if (vga_h_count == H_HORIZ_SYNC)
                     vga_hsync <= 1'b1;
-                  else if (vga_h_count == H_BACK_PORCH)
+                  else if (vga_h_count == H_BACK_PORCH) begin
                     vga_hborder <= 1'b1;
-                  else if (vga_h_count == H_LEFT_BORDER+1)
+                    if (overscan) vga_hblank <= 1'b0;
+                  end
+                  else if (vga_h_count == H_LEFT_BORDER) begin
                     vga_hblank <= 1'b0;
+                    if (~overscan) vga_hblank <= 1'b0;
+                    vga_active_h_count <= 8'd0;
+                  end
+                  else if (vga_h_count == H_VIDEO)
+                    vga_active_disp_h <= 1'b0;
                   else if (vga_h_count == H_VIDEO+1)
-                    vga_hblank <= 1'b1;
+                    if (~overscan) vga_hblank <= 1'b1;
                   else if (vga_h_count == H_RIGHT_BORDER)
                     vga_hborder <= 1'b0;
-
+                  else if (vga_h_count == H_RIGHT_BORDER)
+                    if (overscan) vga_hblank <= 1'b1;
                   if (vga_h_count == H_LEFT_BORDER)
-                    vga_active_h_count = 8'b11111111;
+                    vga_active_h_count <= 8'b11111111;
                   else
-                    vga_active_h_count = vga_active_h_count + 1;
+                    vga_active_h_count <= vga_active_h_count + 1;
                end
 
              // vertical syncs, blanks are the same
@@ -254,7 +269,7 @@ module mc6847 (
              // generate linebuffer address
              // - alternate every 2nd line
              vga_linebuf_addr <= {!v_count[0], vga_active_h_count};
-             vga_vblank_r     = vga_vblank;
+             vga_vblank_r    <= vga_vblank;
           end
      end
 
@@ -311,9 +326,13 @@ module mc6847 (
                   else if (v_count == V2_BACK_PORCH)
                     begin
                        cvbs_vborder <= 1'b1;
+                       cvbs_active_disp_v <= 1'b0;
+                       if (overscan) cvbs_vblank <= 1'b0;
                     end
                   else if (v_count == V2_TOP_BORDER)
                     begin
+                       cvbs_active_disp_v <= 1'b1;
+                       if (~overscan) cvbs_vblank <= 1'b0;
                        cvbs_vblank    <= 1'b0;
                        row_v          = 0;
                        videoaddr_base = 0;
@@ -322,11 +341,14 @@ module mc6847 (
                     end
                   else if (v_count == V2_VIDEO)
                     begin
+                       cvbs_active_disp_v <= 1'b0;
+                       if (~overscan) cvbs_vblank <= 1'b1;
                        cvbs_vblank <= 1'b1;
                        fs_int <= 1'b1;
                     end
                   else if (v_count == V2_BOTTOM_BORDER)
                     begin
+                        if (overscan) cvbs_vblank <= 1'b1;
                        cvbs_vborder <= 1'b0;
                     end
                   else
@@ -380,35 +402,44 @@ module mc6847 (
                     cvbs_hsync <= 1'b0;
                   else if (h_count == H_HORIZ_SYNC)
                     cvbs_hsync <= 1'b1;
-                  else if (h_count == H_BACK_PORCH)
-                    ;
+                  else if (h_count == H_BACK_PORCH) begin
+                    cvbs_active_disp_h <= 1'b0;
+                    if (overscan) cvbs_hblank <= 1'b0;
+                  end
                   else if (h_count == H_LEFT_RSTADDR)
-                    active_h_count = 0;
+                    active_h_count <= 0;
                   else if (h_count == H_LEFT_BORDER)
                     begin
+                       cvbs_active_disp_h <= 1'b1;
+                       if (~overscan) cvbs_hblank <= 1'b0;
+                       active_h_count <= 0;
                        cvbs_hblank    <= 1'b0;
                        active_h_start <= 1'b1;
                     end
                   else if (h_count == H_VIDEO)
                     begin
-                       cvbs_hblank    <= 1'b1;
-                       active_h_count = active_h_count + 1;
+                       cvbs_active_disp_h <= 1'b0;
+                       if (~overscan) cvbs_hblank    <= 1'b1;
+                       active_h_count <= active_h_count + 1;
                     end
-                  else if (h_count == H_RIGHT_BORDER)
-                    ;
+                  else if (h_count == H_RIGHT_BORDER) begin
+                    if (overscan) cvbs_hblank <= 1'b1;
+                  end
                   else
-                    active_h_count = active_h_count + 1;
+                    active_h_count <= active_h_count + 1;
                end
 
              // generate character rom address
              char_a <= { dd[6:0], row_v[3:0] };
+            //  char_a <= { 1'b0, dd[5:0], row_v[3:0] };
 
              // DA0 high during FS
-             if (cvbs_vblank == 1'b1)
+             if (cvbs_active_disp_v == 1'b1)
                da0_int <= 5'b11111;
-             else if (cvbs_hblank == 1'b1)
+             else if (cvbs_active_disp_h == 1'b1)
                da0_int <= 5'b00000;
-             else if (cvbs_hblank_r == 1'b1 && cvbs_hblank == 1'b0)
+             else if (active_h_start)
+            //  else if (cvbs_hblank_r == 1'b1 && cvbs_hblank == 1'b0)
                da0_int <= 5'b01000;
              else
                da0_int <= da0_int + 1;
@@ -456,7 +487,7 @@ module mc6847 (
         else if (cvbs_clk_ena)
           begin
              if (active_h_start)
-               count = 0;
+              count = 2;
              if (an_g_s == 1'b0)
                // alpha-semi modes
                if (count[2:0] == 0)

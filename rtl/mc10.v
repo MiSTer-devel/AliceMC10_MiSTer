@@ -119,7 +119,7 @@ always @(posedge clk_sys)
   clk_vid <= clk_vid + 4'd1;
 
 mc6847 U11(
-  .clk(clk_vid[1]),
+  .clk(clk_vid[0]),
   .clk_ena(clk_vid[2]),
   .reset(reset),
   .da0(),

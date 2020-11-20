@@ -24,7 +24,9 @@ reg [7:0] ibyte;
 reg [2:0] state;
 reg sq_start;
 reg [1:0] eof;
+reg name;
 wire done;
+reg [18:0] hold;
 
 parameter
   IDLE      = 3'h0,
@@ -33,7 +35,8 @@ parameter
   READ1     = 3'h3,
   READ2     = 3'h4,
   READ3     = 3'h5,
-  READ4     = 3'h6;
+  READ4     = 3'h6,
+  NAME      = 3'h7;
 
 
 always @(posedge clk) begin
@@ -49,8 +52,20 @@ always @(posedge clk) begin
     NEXT: begin
       state <= READ1;
       sdram_rd <= 1'b0;
+      if (seq == 24'h553c00) name <= 1'd1;
+      if (seq == 24'h555555 && name) begin
+        name <= 1'd0;
+        state <= NAME;
+        hold <= 19'd445000; // 0.5s
+        sdram_addr <= sdram_addr - 25'd3;
+      end
       if (seq == 24'h553cff) eof <= 2'd1;
       if (seq == 24'h00ff55 && eof == 2'd1) eof <= 2'd2;
+    end
+    NAME: begin
+      ibyte <= 8'd0;
+      hold <= hold - 19'd1;
+      state <= hold == 0 ? NEXT : NAME;
     end
     READ1: begin
       sdram_rd <= 1'b1;
