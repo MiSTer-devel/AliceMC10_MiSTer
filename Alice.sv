@@ -150,7 +150,7 @@ module emu
 
 ///////// Default values for ports not used in this core /////////
 
-assign ADC_BUS  = 'Z;
+//assign ADC_BUS  = 'Z;
 assign USER_OUT = '1;
 assign {UART_RTS, UART_TXD, UART_DTR} = 0;
 assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
@@ -181,9 +181,10 @@ localparam CONF_STR = {
 	"O1,Aspect ratio,4:3,16:9;",
 	"OC,16k expansion,Off,On;",
 	"-;",
-	"F1,c10,Tape Load;",
-	"TA,Tape Play/Pause;",
-	"TB,Tape Rewind;",
+	"OF,Tape Input,File,ADC;",
+	"D0F1,c10,Tape Load;",
+	"D0TA,Tape Play/Pause;",
+	"D0TB,Tape Rewind;",
 	"OD,Show tape stream,Off,On;",
 	"OE,Enable tape audio,Off,On;",
 	"-;",
@@ -221,7 +222,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.buttons(buttons),
 	.status(status),
-	.status_menumask({status[5]}),
+	.status_menumask({status[15]}),
 
 	.ps2_key(ps2_key),
 
@@ -256,6 +257,64 @@ pll pll
 
 wire reset = RESET | status[0] | buttons[1];
 
+/////////////////////// ADC Module  //////////////////////////////
+
+
+wire [11:0] adc_data;
+wire        adc_sync;
+reg [11:0] adc_value;
+reg adc_sync_d;
+
+integer ii=0;
+reg [11:0] adc_val[0:511];
+reg [21:0] adc_total = 0;
+reg [11:0] adc_avg;
+
+reg adc_cassette_bit;
+
+
+// interface to ADC via framework
+//
+ltc2308 #(1, 48000, 50000000) adc_input		// mono, ADC_RATE = 48000, CLK_RATE = 50000000
+(
+	.reset(reset),
+	.clk(CLK_50M),
+
+	.ADC_BUS(ADC_BUS),
+	.dout(adc_data),
+	.dout_sync(adc_sync)
+);
+
+// when data arrives:
+//		- latch it in adc_value
+//		- keep track of a running average across 512 samples
+//
+//		-> this average acts as a high-pass filter above roughly 100 Hz while retaining
+//		 	while retaining very high frequency response, for possible future fast-load techniques
+//
+always @(posedge CLK_50M) begin
+
+	adc_sync_d<=adc_sync;
+	if(adc_sync_d ^ adc_sync) begin
+		adc_value <= adc_data;					// latch in current value, adc_Value
+		
+		adc_val[0] <= adc_value;				
+		adc_total  <= adc_total - adc_val[511] + adc_value;
+
+		for (ii=0; ii<511; ii=ii+1)
+			adc_val[ii+1] <= adc_val[ii];
+			
+		adc_avg <= adc_total[20:9];			// update average value every fetch
+		
+		if (adc_value < (adc_avg - 100))		// flip the cassette bit if > 0.1V from average
+			adc_cassette_bit <= 1;				// note that original CoCo reversed polarity
+
+		if (adc_value > (adc_avg + 100))
+			adc_cassette_bit <= 0;
+		
+	end
+end
+
 //////////////////////////////////////////////////////////////////
 
 wire hblank;
@@ -273,7 +332,7 @@ wire exp_sel = status[12] && (exp_addr[15:12]  > 4 && exp_addr[15:12] < 9);
 wire [7:0] joy_dout;
 wire [2:0] tape_status;
 wire [7:0] mc10_red, ov_red;
-wire tape_audio = status[14] ? k7_dout : 1'b0;
+wire tape_audio = status[14] ? ( status[15] ? adc_cassette_bit :  k7_dout ) : 1'b0;
 
 mc10 mc10
 (
@@ -307,7 +366,7 @@ mc10 mc10
 
 	.audio(audio),
 
-	.cin(k7_dout & tape_status)
+	.cin(status[15] ? adc_cassette_bit : (tape_status != 0 ? k7_dout : 1'b0))
 );
 
 assign AUDIO_L = { audio, audio, 3'd0, tape_audio, 10'd0 };
@@ -355,11 +414,11 @@ cassette cassette(
 // it shows tape status
 overlay ov(
   .clk_vid(clk_sys),
-  .din(sdram_data),
-  .sample(sdram_rd),
+  .din(status[15] ? { adc_cassette_bit, 7'd0 }  : sdram_data),
+  .sample(status[15] ? adc_cassette_bit : sdram_rd),
   .vsync(vsync),
   .hsync(hsync),
-  .status({ k7_dout, tape_status }),
+  .status(status[15] ? { adc_cassette_bit, 3'd3} : { k7_dout, tape_status }),
   .color(ov_red),
   .en(status[13])
 );
