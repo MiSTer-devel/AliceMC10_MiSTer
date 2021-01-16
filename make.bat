@@ -1,1 +1,1 @@
-%QUARTUS_ROOTDIR%\bin64\quartus_sh --flow compile Alice
+%QUARTUS_ROOTDIR%\bin64\quartus_sh --flow compile AliceMC10
