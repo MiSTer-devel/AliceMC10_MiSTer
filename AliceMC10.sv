@@ -244,13 +244,14 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 wire locked;
 wire clk_sys;
 wire clk_4; // 4MHz
-
+wire clk_42;
 pll pll
 (
 	.refclk(CLK_50M),
 	.rst(0),
-	.outclk_0(clk_sys),
-	.outclk_1(clk_4),
+	.outclk_0(clk_sys),// 50
+	.outclk_1(clk_42), // 42
+	.outclk_2(clk_4),
 	.locked(locked)
 );
 
@@ -338,6 +339,7 @@ mc10 mc10
 (
 	.reset(reset),
 	.clk_sys(clk_sys),
+	.clk_video(clk_42),
 	.clk_4(clk_4),
 
 	.ps2_key(ps2_key),
@@ -369,10 +371,15 @@ mc10 mc10
 	.cin(status[15] ? adc_cassette_bit : (tape_status != 0 ? k7_dout : 1'b0))
 );
 
+
+
+
+
+
 assign AUDIO_L = { audio, audio, 3'd0, tape_audio, 10'd0 };
 assign AUDIO_R = { audio, audio, 3'd0, tape_audio, 10'd0 };
 assign CE_PIXEL = ce_pix;
-assign CLK_VIDEO = clk_sys;
+assign CLK_VIDEO = clk_42;
 assign VGA_DE = ~(hblank | vblank);
 assign VGA_HS = hsync;
 assign VGA_VS = vsync;
@@ -413,7 +420,7 @@ cassette cassette(
 
 // it shows tape status
 overlay ov(
-  .clk_vid(clk_sys),
+  .clk_vid(clk_42),
   .din(status[15] ? { adc_cassette_bit, 7'd0 }  : sdram_data),
   .sample(status[15] ? adc_cassette_bit : sdram_rd),
   .vsync(vsync),

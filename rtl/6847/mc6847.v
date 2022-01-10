@@ -33,8 +33,19 @@ module mc6847 (
   reg [10:0] char_a;
   wire [7:0] char_d_o;
 
-   parameter CVBS_NOT_VGA       = 0;
+   parameter CVBS_NOT_VGA       = 1;
 
+	
+  parameter H_FRONT_PORCH    = 11-1+1;
+  parameter H_HORIZ_SYNC     = H_FRONT_PORCH + 35+2;
+  parameter H_BACK_PORCH     = H_HORIZ_SYNC + 34+1;
+  parameter H_LEFT_BORDER    = H_BACK_PORCH + 61+1+3; // adjust for hblank de-assert @sys_count=6
+  parameter H_LEFT_RSTADDR   = H_LEFT_BORDER - 16 + 8;
+  parameter H_VIDEO          = H_LEFT_BORDER + 256;
+  parameter H_RIGHT_BORDER   = H_VIDEO + 61+1-3;      // "
+  parameter H_TOTAL_PER_LINE = H_RIGHT_BORDER;
+	
+/*	
    parameter H_FRONT_PORCH      = 8;
    parameter H_HORIZ_SYNC       = H_FRONT_PORCH + 48;
    parameter H_BACK_PORCH       = H_HORIZ_SYNC + 24;
@@ -43,6 +54,7 @@ module mc6847 (
    parameter H_VIDEO            = H_LEFT_BORDER + 256;
    parameter H_RIGHT_BORDER     = H_VIDEO + 31;
    parameter H_TOTAL_PER_LINE   = H_RIGHT_BORDER;
+*/
 
    parameter V2_FRONT_PORCH     = 2;
    parameter V2_VERTICAL_SYNC   = V2_FRONT_PORCH + 2;
@@ -424,7 +436,7 @@ module mc6847 (
 
              if (an_g_s == 1'b0)
                begin
-                  lookup[4:0] <= active_h_count[7:3] + 1;
+                  lookup[4:0] <= active_h_count[7:3] ;
                   videoaddr   <= { videoaddr_base[12:5] , lookup[4:0]};
                end
              else
@@ -432,12 +444,12 @@ module mc6847 (
                   case (gm)
                     3'b000, 3'b001, 3'b011, 3'b101:
                       begin
-                         lookup[3:0] <= active_h_count[7:4] + 1;
+                         lookup[3:0] <= active_h_count[7:4] ;
                          videoaddr   <= { videoaddr_base[12:4], lookup[3:0] };
                       end
                     3'b010, 3'b100, 3'b110, 3'b111:
                       begin
-                         lookup[4:0] <= active_h_count[7:3] + 1;
+                         lookup[4:0] <= active_h_count[7:3] ;
                          videoaddr   <= { videoaddr_base[12:5] , lookup[4:0] };
                       end
                   endcase

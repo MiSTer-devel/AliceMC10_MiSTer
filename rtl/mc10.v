@@ -2,6 +2,7 @@
 module mc10 (
   input reset,
   input clk_sys,
+  input clk_video,
   input clk_4,
   input [10:0] ps2_key,
 
@@ -102,25 +103,52 @@ always @(posedge clk_sys)
   else if (U8_clock) U8 <= cpu_dout[7:2];
 
 dpram u9_u10(
-  .clock(clk_sys),
+  .clock_a(clk_sys),
 
   .address_a(cpu_addr[11:0]),
   .data_a(cpu_dout),
   .wren_a(~(cpu_rw|U4_Y1[1]|U4_Y2[1])),
   .q_a(ram_dout),
 
+  .clock_b(clk_video),
   .address_b(vdg_addr[11:0]),
   .q_b(ram_dout_b)
 );
 
-
+/*
 reg [3:0] clk_vid;
-always @(posedge clk_sys)
+always @(posedge clk_video)
   clk_vid <= clk_vid + 4'd1;
+*/
+  
+reg clk_14M318_ena ;
+reg [1:0] count;
 
+
+always @(posedge clk_video)
+begin
+	if (reset)
+		count<=0;
+	else
+	begin
+		clk_14M318_ena <= 0;
+		if (count == 'd2)
+		begin
+		  clk_14M318_ena <= 1;
+        count <= 0;
+		end
+		else
+		begin
+			count<=count+1;
+		end
+	end
+end  
+  
 mc6847 U11(
-  .clk(clk_vid[1]),
-  .clk_ena(clk_vid[2]),
+  //.clk(clk_vid[1]),
+  //.clk_ena(clk_vid[2]),
+  .clk(clk_video),
+  .clk_ena(clk_14M318_ena),
   .reset(reset),
   .da0(),
   .videoaddr(vdg_addr),
