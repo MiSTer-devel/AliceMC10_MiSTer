@@ -180,7 +180,6 @@ assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
 assign {SDRAM_DQ, SDRAM_A, SDRAM_BA, SDRAM_CLK, SDRAM_CKE, SDRAM_DQML, SDRAM_DQMH, SDRAM_nWE, SDRAM_nCAS, SDRAM_nRAS, SDRAM_nCS} = 'Z;
 assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = '0;
 
-assign VGA_SL = 0;
 assign VGA_F1 = 0;
 
 assign AUDIO_S = 0;
@@ -192,8 +191,11 @@ assign BUTTONS = 0;
 
 //////////////////////////////////////////////////////////////////
 
-assign VIDEO_ARX = status[1] ? 8'd16 : 8'd4;
-assign VIDEO_ARY = status[1] ? 8'd9  : 8'd3;
+wire [1:0] ar = status[9:8];
+
+assign VIDEO_ARX = (!ar) ? 12'd4 : (ar - 1'd1);
+assign VIDEO_ARY = (!ar) ? 12'd3 : 12'd0;
+
 
 //       exp on/off  Tape rewind   Tape play                    reset
 // V ...     C             B           A      9 8 7 6 5 4 3 2 1   0
@@ -201,7 +203,9 @@ assign VIDEO_ARY = status[1] ? 8'd9  : 8'd3;
 localparam CONF_STR = {
 	"AliceMC10;;",
 	"-;",
-	"O1,Aspect ratio,4:3,16:9;",
+        "O89,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
+        "O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
+	"-;",
 	"OC,16k expansion,Off,On;",
 	"-;",
 	"OF,Tape Input,File,ADC;",
@@ -217,7 +221,11 @@ localparam CONF_STR = {
 	"V,v",`BUILD_DATE
 };
 
-wire forced_scandoubler;
+wire        forced_scandoubler;
+wire        direct_video;
+wire [21:0] gamma_bus;
+
+
 wire  [1:0] buttons;
 wire [31:0] status;
 wire [10:0] ps2_key;
@@ -238,9 +246,10 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 	.clk_sys(clk_sys),
 	.HPS_BUS(HPS_BUS),
 	.EXT_BUS(),
-	.gamma_bus(),
 
-	.forced_scandoubler(forced_scandoubler),
+        .forced_scandoubler(forced_scandoubler),
+        .gamma_bus(gamma_bus),
+        .direct_video(direct_video),
 
 	.buttons(buttons),
 	.status(status),
@@ -355,6 +364,7 @@ wire exp_sel = status[12] && (exp_addr[15:12]  > 4 && exp_addr[15:12] < 9);
 wire [7:0] joy_dout;
 wire [2:0] tape_status;
 wire [7:0] mc10_red, ov_red;
+wire [7:0] green,blue;
 wire tape_audio = status[14] ? ( status[15] ? adc_cassette_bit :  k7_dout ) : 1'b0;
 
 mc10 mc10
@@ -379,8 +389,8 @@ mc10 mc10
 	.rs232_b(~rs2),
 
 	.red(mc10_red),
-	.green(VGA_G),
-	.blue(VGA_B),
+	.green(green),
+	.blue(blue),
 
 	.hsync(hsync),
 	.vsync(vsync),
@@ -396,16 +406,48 @@ mc10 mc10
 
 
 
+wire [2:0] scale = status[5:3];
+wire [2:0] sl = scale ? scale - 1'd1 : 3'd0;
+wire       scandoubler = (scale || forced_scandoubler);
+assign VGA_SL = sl[1:0];
+
+wire freeze_sync;
+
+video_mixer #(.GAMMA(1)) video_mixer
+(
+   .*,
+
+   .CLK_VIDEO(CLK_VIDEO),
+   .ce_pix(ce_pix),
+
+   .hq2x(scale==1),
+
+
+   .R(mc10_red|ov_red),
+   .G(green),
+   .B(blue),
+
+   .HSync(hsync),
+   .VSync(vsync),
+   .HBlank(hblank),
+   .VBlank(vblank)
+);
 
 
 assign AUDIO_L = { audio, audio, 3'd0, tape_audio, 10'd0 };
 assign AUDIO_R = { audio, audio, 3'd0, tape_audio, 10'd0 };
-assign CE_PIXEL = ce_pix;
+
 assign CLK_VIDEO = clk_42;
+/*
+assign CE_PIXEL = ce_pix;
 assign VGA_DE = ~(hblank | vblank);
 assign VGA_HS = hsync;
 assign VGA_VS = vsync;
 assign VGA_R = mc10_red | ov_red;
+assign VGA_G = green;
+assign VGA_B = blue;
+*/
+
 
 wire [24:0] sdram_addr;
 wire [7:0] sdram_data;
