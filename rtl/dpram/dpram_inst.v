@@ -1,7 +1,8 @@
 dpram	dpram_inst (
 	.address_a ( address_a_sig ),
 	.address_b ( address_b_sig ),
-	.clock ( clock_sig ),
+	.clock_a ( clock_a_sig ),
+	.clock_b ( clock_b_sig ),
 	.data_a ( data_a_sig ),
 	.data_b ( data_b_sig ),
 	.wren_a ( wren_a_sig ),
