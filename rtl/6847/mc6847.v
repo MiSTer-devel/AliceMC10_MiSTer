@@ -401,11 +401,12 @@ module mc6847 (
                        cvbs_hblank    <= 1'b0;
                     //active_h_count = active_h_count + 1 ;
                     end
+                  else if (h_count == H_VIDEO-1)
+                       active_h_count = active_h_count + 1;
                   else if (h_count == H_VIDEO)
                     begin
                        cvbs_hblank    <= 1'b1;
                        active_h_start <= 1'b1;
-                       active_h_count = active_h_count + 1;
                     end
                   else if (h_count == H_RIGHT_BORDER)
                     ;
